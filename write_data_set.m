@@ -1,5 +1,3 @@
-
-
 % dv(:,1) = Year
 % dv(:,2) = Month
 % dv(:,3) = Day
