@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import pandas as pd
-import random
 import numpy as np
 
 class TimeSeriesLOO:
