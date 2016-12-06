@@ -2,60 +2,89 @@ from __future__ import print_function
 
 import joblib
 import numpy as np
+import os
 import pandas as pd
-
-np.set_printoptions(linewidth = 190, threshold = 100000,
-    formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.5f' % (float(x),)})
-pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
-pd.set_option('display.max_columns', pd.util.terminal.get_terminal_size()[0])
-pd.set_option('display.max_rows', 2000)
 
 import util
 
+from fit_predict import fit_predict
 
+np.set_printoptions(linewidth = 190, threshold = 100000,
+    formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
+pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
+pd.set_option('display.max_columns', pd.util.terminal.get_terminal_size()[0])
+pd.set_option('display.max_rows', 2000)
+pd.set_option('display.precision', 2)
+
+'''
+raw columns:
+    year, month, day, time, sym,
+    0...20 Predictor Inputs,
+    0...n extra inputs
+    target: used for training predictor; clamped value of raw_target
+    raw_target: estimated gain/loss per trade, assuming a buy.
+      For buys +raw_target is good, - is bad.
+      For sells, -raw_target is good.
+
+Of the "Predictor Inputs":
+columns 0-18 are common inputs to buy and sell predictors
+column 19 is input for either the buy or the sell predictor
+column 20 (last column) is +/-1 indicating buy or sell
+'''
 def main(args):
+    output_col = 'output'
     if args.in_csv:  # READ CSV
+        if os.path.isfile(args.in_file):
+            print('%s already exists and would be overwritten' % (args.in_file))
+            exit(0)
         with util.timed_execution('Reading %s' % (args.in_csv,)):
-            df = pd.read_csv(args.in_csv)
+            df = pd.read_csv(args.in_csv, delim_whitespace=True, header=None, nrows=args.limit)
+            n_cols = len(df.columns)
+            n_xtra = n_cols - 29
+            pi_names = ' '.join([' p%02d' % (_,) for _ in range(0, 19)])
+            xtra_names = ' '.join([' x%02d' % (_,) for _ in range(0, n_xtra)])
+            cnames = ('year month day time sym ' + pi_names + ' bs_spcfc bs '
+                      + xtra_names + ' target raw ' + output_col).split()
+            df.columns = cnames
+            df.year = df.year.astype(int)
+            df.month = df.month.astype(int)
+            df.day = df.day.astype(int)
+            df.sym = df.sym.astype(int)
+            df.bs = df.bs.astype(int)
         with util.timed_execution('Writing %s' % (args.in_file,)):
             joblib.dump(df, args.in_file)  # WRITE DATAFRAME
-    df = joblib.load(args.in_file)  # READ DATAFRAME
+    with util.timed_execution('Reading %s' % (args.in_file,)):
+        df = joblib.load(args.in_file)  # READ DATAFRAME
     if args.limit:
         df = df[:args.limit]
-    n_cols = len(df.columns)
-    n_xtra = n_cols - 28
-    pi_names = ' '.join(['p%02d' % (_,) for _ in range(0, 20)])
-    xtra_names = ' '.join(['p%02d' % (_,) for _ in range(0, n_xtra)])
-    df.columns = 'year month day time sym' + pi_names + xtra_names + \
-                 ' target raw'.split()
+    input_cols = [_ for _ in df.columns if _ != output_col]
 
-    '''
-    raw columns:
-        year, month, day, time, sym,
-        0...20 Predictor Inputs,
-        0...n extra inputs
-        target: used for training predictor; clamped value of raw_target
-        raw_target: estimated gain/loss per trade, assuming a buy.
-          For buys +raw_target is good, - is bad.
-          For sells, -raw_target is good.
-
-    Of the "Predictor Inputs":
-    columns 0-18 are common inputs to buy and sell predictors
-    column 19 is input for either the buy or the sell predictor
-    column 20 (last column) is +/-1 indicating buy or sell
-    '''
     # from datetime import date
     # dates = df.apply(lambda x: date(x.year, x.month, x.day))
-    months = df.apply(lambda x: '%04d/%02d' % (x.year, x.month))
+    with util.timed_execution('Creating months'):
+        df['months'] = df.apply(lambda x: '%04d/%02d' % (x.year, x.month), axis=1)  # don't forget the axis!!!
 
     from time_series_loo import TimeSeriesLOO
-    loo = TimeSeriesLOO(months, args.tr_n, args.ts_n)
+    with util.timed_execution('Constructing LOO'):
+        loo = TimeSeriesLOO(df['months'], args.tr_n, args.ts_n)
+
     for tr_periods, ts_periods in loo():
-        assert len(tr_periods) == tr_n
-        assert len(ts_periods) == ts_n
-        assert len(np.union1d(tr_periods, ts_periods)) == tr_n + ts_n
-        print ([_ for _ in tr_periods])
+        assert len(tr_periods) == args.tr_n
+        assert len(ts_periods) == args.ts_n
+        assert len(np.union1d(tr_periods, ts_periods)) == args.tr_n + args.ts_n
+        print ([_ for _ in tr_periods], end='')
         print ([_ for _ in ts_periods])
+        xs_trn = df.loc[df.month in tr_periods, input_cols]
+        xs_tst = df.loc[df.month in ts_periods, input_cols]
+        print(xs_trn.describe())
+        print(xs_tst.describe())
+
+        ys_trn = df.loc[df.month in tr_periods, output_col]
+        ys_tst = df.loc[df.month in ts_periods, output_col]
+        print(ys_trn.describe())
+        print(ys_tst.describe())
+
+        fit_predict(df, xs_trn, ys_trn, xs_tst, ys_tst)
 
     '''
     from keras.wrappers.scikit_learn import KerasRegressor
@@ -116,7 +145,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('in_file')
-    parser.add_argument('--in_csv', default='/home/John/Scratch/quanterra/grp1.ds.txt')
+    parser.add_argument('--in_csv')
     parser.add_argument('--results_file',
                         default='/home/John/Scratch/quanterra/results.txt')
     parser.add_argument('--tr_n', type=int, default=3)

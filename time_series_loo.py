@@ -20,7 +20,7 @@ class TimeSeriesLOO:
         :param tr_n: number of periods in training windows
         :param periods_n: number of periods in testing windows
         """
-        self.periods = periods.unique().order().values
+        self.periods = sorted(periods.unique())
         self.tr_n = tr_n
         self.ts_n = ts_n
 
