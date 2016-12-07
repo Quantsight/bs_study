@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 
+
 class TimeSeriesLOO:
     """
     Starting with first date, sequentially pull <periods_n> test periods out at a time, paired 
@@ -18,17 +19,22 @@ class TimeSeriesLOO:
         output.
         :param periods: pandas index containing candidate periods
         :param tr_n: number of periods in training windows
-        :param periods_n: number of periods in testing windows
+        :param periods: number of periods in testing windows
         """
         self.periods = sorted(periods.unique())
         self.tr_n = tr_n
         self.ts_n = ts_n
+        if len(self.periods) < tr_n + ts_n:
+            err = ('Not enough periods (%d) to fulfill tr_n:%d and ts_n:%d' %
+                  (len(self.periods), tr_n, ts_n))
+            err += '\nPeriods found: %s' % (self.periods,)
+            raise Exception(err)
 
     def __len__(self): return len(self.periods)
     
     def __call__(self):
         """
-        generate in-order train/tesperiods subseperiods
+        generate in-order train/test periods
         """
         ts_beg_i = 0
         for ii in range(len(self.periods)):
