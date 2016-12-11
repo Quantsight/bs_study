@@ -7,7 +7,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 def fit_predict(xs_trn, ys_trn, xs_tst, ys_tst):
-    clf = RandomForestRegressor()
+    clf = RandomForestRegressor(
+        n_estimators=100, min_samples_split=300, n_jobs=-1)
     clf.fit(xs_trn, ys_trn)
     preds = clf.predict(X=xs_tst)
     mse = mean_squared_error(ys_tst, preds)

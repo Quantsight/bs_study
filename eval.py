@@ -7,7 +7,7 @@ import pandas as pd
 
 import util
 
-from fit_predict import fit_predict, fit_predict_lin
+from fit_predict import fit_predict
 
 np.set_printoptions(linewidth = 250, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
@@ -17,7 +17,7 @@ pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
 def report_perf(df_ts, preds, bs, verbose=0):
-    if bs is not None:
+    if bs:
         ix =  np.where(df_ts.bs == bs)[0]
         profit = bs * df_ts.iloc[ix]['raw'].values
         asc = bs < 0
@@ -25,7 +25,7 @@ def report_perf(df_ts, preds, bs, verbose=0):
         bs = 0
         ix = range(len(df_ts))
         profit = df_ts.raw.values
-        asc = True
+        asc = False
         # invert sell polarities (both prediction and raw target)
         sell_ix =  np.where(df_ts.bs == -1)[0]
         preds[sell_ix] *= -1
@@ -43,7 +43,7 @@ def report_perf(df_ts, preds, bs, verbose=0):
     cumraw = srtd.iloc[i_max].cumraw
     if verbose > 0:
         print('%+d %10.4f  %3.0f%%  %8.0f  %8.4f' % (
-            bs, srtd.iloc[i_max].pred, pct_taken, cumraw, cumraw/len(srtd)))
+            bs, srtd.iloc[i_max].preds, pct_taken, cumraw, cumraw/len(srtd)))
     return cumraw
 
 '''
@@ -110,9 +110,9 @@ def main(args):
         ''' GLOBAL FIT; no time-series '''
         preds = fit_predict(df[input_cols], df[output_col],
                             df[input_cols], df[output_col])
-        bcr = report_perf(df, preds,  1, args.verbose)
-        scr = report_perf(df, preds, -1, args.verbose)
-        print('Total Profit: %.2f' % (bcr+scr))
+        bcr = report_perf(df, preds,  1, verbose=1)
+        scr = report_perf(df, preds, -1, verbose=1)
+        cr  = report_perf(df, preds, None, verbose=1)
 
     from time_series_loo import TimeSeriesLOO
     with util.timed_execution('Constructing LOO'):
@@ -136,10 +136,10 @@ def main(args):
                 len(df_tr), len(df_ts), sym), end='')
 
             if args.group_fit:
-                preds = fit_predict(df_tr[input_cols],
-                                    df_tr[output_col],
-                                    df_ts[input_cols],
-                                    df_ts[output_col])
+                preds = fit_predict(df.loc[is_tr,input_cols],
+                                    df.loc[is_tr,output_col],
+                                    df.loc[is_ts,input_cols],
+                                    df.loc[is_ts,output_col])
                 df.loc[is_ts, 'new_pred'] = preds
                 if args.verbose > 0:
                     print('%s ' % (ts_desc,), end='')
@@ -150,18 +150,17 @@ def main(args):
                 tbcr += bcr
                 tscr += scr
             else:
-                tr_sym = df_tr.sym==sym
-                ts_sym = df_ts.sym==sym
-                preds = fit_predict_lin(df_tr.loc[tr_sym, input_cols],
-                                        df_tr.loc[tr_sym, output_col],
-                                        df_ts.loc[ts_sym, input_cols],
-                                        df_ts.loc[ts_sym, output_col])
-                df.loc[is_ts & ts_sym, 'new_pred'] = preds
+                is_sym = df.sym==sym
+                preds = fit_predict(df.loc[is_tr & is_sym, input_cols],
+                                    df.loc[is_tr & is_sym, output_col],
+                                    df.loc[is_ts & is_sym, input_cols],
+                                    df.loc[is_ts & is_sym, output_col])
+                df.loc[is_ts & is_sym, 'new_pred'] = preds
                 if args.verbose == 2:
                     print('%s %2d ' % (ts_desc, sym), end='')
-                    bcr = report_perf(df_ts.loc[ts_sym], preds,  1)
+                    bcr = report_perf(df.loc[is_ts & is_sym], preds,  1)
                     print('%s %2d ' % (ts_desc, sym), end='')
-                    scr = report_perf(df_ts.loc[ts_sym], preds, -1)
+                    scr = report_perf(df.loc[is_ts & is_sym], preds, -1)
                     tbcr += bcr
                     tscr += scr
     bcr = report_perf(df, df.new_pred.values, 1, verbose=1)
