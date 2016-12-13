@@ -276,3 +276,23 @@ ans =
         0.23   6846023.16
        -0.17   6709962.16
         0.21  13553076.93
+
+
+Hypothesis: RF is better than lp
+Predict target [-20,20] & sort on it
+Result: worse at both buys & sells
+RF, trees=100, min_split=300, output='target'
++1     0.0762   67%   6765197    0.9891
+-1     0.0118   68%   6569156    0.9854
++0     0.0545   67%  13326354    0.9867
+Global Profit: 13326353.69
+
+
+Hypothesis: RF is less sensitive to outliers (they don't affect the "slope" of middling points)
+Predict raw & sort on it
+Result: worse at longs, better at shorts
+RF, trees=100, min_split=300, output='raw'
++1     0.0248   67%   6719762    0.9825
+-1     0.0894   69%   6606313    0.9909
++0     0.0268   67%  13319712    0.9862
+Global Profit: 13319711.74

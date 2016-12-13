@@ -5,7 +5,7 @@ import datetime
 import sys
 
 @contextlib.contextmanager
-def timed_execution(descr, default_end=True, strm=sys.stderr):
+def timed_execution(descr, end='\n', strm=sys.stderr):
     start = datetime.datetime.now()
     print('%s ' % (descr, ), end="", file=strm)
     strm.flush()
@@ -14,8 +14,5 @@ def timed_execution(descr, default_end=True, strm=sys.stderr):
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     hms = '%02d:%02d:%02d' % (hours, minutes, seconds)
-    if default_end:
-        print(hms, file=strm)
-    else:
-        print(hms, end="", file=strm)
+    print(hms, end=end, file=strm)
     strm.flush()
