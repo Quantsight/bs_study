@@ -70,8 +70,8 @@ def main(args):
     xtra_names = ' '.join([' x%02d' % (_,) for _ in range(n_xtra)])
     cnames = ('year month day time sym ' + pi_names + ' bs_spcfc bs '
               + xtra_names + ' target raw nickpred').split()
-    input_cols = (pi_names + ' bs_spcfc bs').split()
-    grp_fit_cols = list(input_cols)
+    sym_inputs = (pi_names + ' bs_spcfc bs').split()
+    grp_inputs = list(sym_inputs) # create a copy
 
     if args.in_csv:  # READ CSV
         if os.path.isfile(args.in_file):
@@ -86,7 +86,8 @@ def main(args):
             df.day = df.day.astype(int)
             df.sym = df.sym.astype(int)
             df.bs = df.bs.astype(int)
-            df['new_pred'] = 0  # placeholder for predictions
+            df['grp_pred'] = 0  # placeholder for predictions
+            df['sym_pred'] = 0  # placeholder for predictions
         with util.timed_execution('Creating months'):
             # don't forget the axis!!!
             df['period'] = df.apply(lambda x:
@@ -101,8 +102,8 @@ def main(args):
 
     if args.noncv_fit:
         ''' GLOBAL FIT; no time-series '''
-        ts_preds, tr_preds, clf = fit_predict_lin(df[input_cols], df[output_col],
-                            df[input_cols], df[output_col])
+        ts_preds, tr_preds, clf = fit_predict_lin(df[sym_inputs], df[output_col],
+                            df[sym_inputs], df[output_col])
         _ = report_perf(df, ts_preds,  1, verbose=1)
         _ = report_perf(df, ts_preds, -1, verbose=1)
         _ = report_perf(df, ts_preds, None, verbose=1)
@@ -114,9 +115,9 @@ def main(args):
     model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
     if args.group_fit:
         pred_col = 'grp'
-        input_cols.append('grp')
+        sym_inputs.append('grp_pred')
         if args.group_fit == 'RF':
-            input_cols.append('sym')
+            grp_inputs.append('sym')
         grp_model = model_lookup[args.group_fit]
     else:
         grp_model = None
@@ -138,24 +139,27 @@ def main(args):
         is_ts = df.period.isin(ts_periods)
 
         if grp_model:
-            with util.timed_execution('Fitting all symbols'):
-                ts_preds, tr_preds, clf = grp_model(df.loc[is_tr, grp_fit_cols],
+            with util.timed_execution('Fitting all symbols', end=''):
+                print('%24s %12s %12d %12d ' % (
+                    [_ for _ in tr_periods], [_ for _ in ts_periods],
+                    is_tr.sum(), is_ts.sum()), end='')
+                ts_preds, tr_preds, clf = grp_model(df.loc[is_tr, grp_inputs],
                                                     df.loc[is_tr, output_col],
-                                                    df.loc[is_ts, grp_fit_cols],
+                                                    df.loc[is_ts, grp_inputs],
                                                     df.loc[is_ts, output_col])
-                df.loc[is_tr, pred_col] = tr_preds
-                df.loc[is_ts, pred_col] = ts_preds
+                df.loc[is_tr, 'grp_pred'] = tr_preds
+                df.loc[is_ts, 'grp_pred'] = ts_preds
             if args.verbose > 0:
                 print('%s ' % (ts_desc,), end='')
             bcr = report_perf(df.loc[is_ts], ts_preds, 1, verbose=args.verbose)
             if args.verbose > 0:
                 print('%s ' % (ts_desc,), end='')
-            if args.rf_group:
-                fn = 'grp_%s' % (ts_desc,)
-                dump_tree(clf, grp_fit_cols, fn=fn, dir=args.rf_group, max_depth=4)
             scr = report_perf(df.loc[is_ts], ts_preds, -1, verbose=args.verbose)
             tbcr += bcr
             tscr += scr
+            if args.dump_grp:
+                fn = 'grp_%s' % (ts_desc,)
+                dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=4)
 
         if sym_model:
             for sym in sorted(df.sym.unique()):
@@ -164,15 +168,15 @@ def main(args):
                     [_ for _ in tr_periods], [_ for _ in ts_periods],
                     (is_tr & is_sym).sum(), (is_ts & is_sym).sum(), sym), end='')
                 ts_preds, tr_preds, clf = sym_model(
-                    df.loc[is_tr & is_sym, input_cols],
+                    df.loc[is_tr & is_sym, sym_inputs],
                     df.loc[is_tr & is_sym, output_col],
-                    df.loc[is_ts & is_sym, input_cols],
+                    df.loc[is_ts & is_sym, sym_inputs],
                     df.loc[is_ts & is_sym, output_col])
-                df.loc[is_ts & is_sym, pred_col] = ts_preds
+                df.loc[is_ts & is_sym, 'sym_pred'] = ts_preds
 
                 if args.rf_sym:
                     fn = 'sym_%s_%s' % (sym, ts_desc)
-                    dump_tree(clf, input_cols, fn=fn, dir=args.rf_sym, max_depth=4)
+                    dump_tree(clf, sym_inputs, fn=fn, dir=args.rf_sym, max_depth=4)
 
                 if args.verbose == 2:
                     print('%s %2d ' % (ts_desc, sym), end='')
@@ -181,14 +185,21 @@ def main(args):
                     scr = report_perf(df.loc[is_ts & is_sym], ts_preds, -1)
                     tbcr += bcr
                     tscr += scr
+                print()
 
-    bcr = report_perf(df, df[pred_col].values, 1, verbose=1)
-    scr = report_perf(df, df[pred_col].values, -1, verbose=1)
-    cr = report_perf(df, df[pred_col].values, None, verbose=1)
+    if grp_model:
+        print('GROUP FIT PERFORMANCE')
+        bcr = report_perf(df, df.grp_pred.values,  1, verbose=1)
+        scr = report_perf(df, df.grp_pred.values, -1, verbose=1)
+        cr  = report_perf(df, df.grp_pred.values, None, verbose=1)
+        print('Global Profit: %10.2f' % (cr,))
 
-    # print('   Buy Profit: %10.2f' % (tbcr,))
-    # print('  Sell Profit: %10.2f' % (tscr,))
-    print('Global Profit: %10.2f' % (cr,))
+    if sym_model:
+        print('SYMBOL FIT PERFORMANCE')
+        bcr = report_perf(df, df.sym_pred.values,  1, verbose=1)
+        scr = report_perf(df, df.sym_pred.values, -1, verbose=1)
+        cr  = report_perf(df, df.sym_pred.values, None, verbose=1)
+        print('Global Profit: %10.2f' % (cr,))
 
 if __name__ == '__main__':
     import argparse
@@ -214,7 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('--noncv_fit', type=int, default=0)
     parser.add_argument('--group_fit')
     parser.add_argument('--sym_fit')
-    parser.add_argument('--rf_group')
+    parser.add_argument('--dump_grp')
     parser.add_argument('--rf_sym')
     parser.add_argument('--output_col', default='target')
 

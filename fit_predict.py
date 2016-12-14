@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
@@ -14,7 +16,7 @@ def fit_predict_rf(xs_trn, ys_trn, xs_tst, ys_tst):
     clf.fit(xs_trn, ys_trn)
     preds = clf.predict(X=xs_tst)
     mse = mean_squared_error(ys_tst, preds)
-    print('\t%7.3f' % (mse,))
+    print('\t%7.3f' % (mse,), end='')
     return preds, clf.oob_prediction_, clf
 
 
@@ -29,6 +31,6 @@ def fit_predict_lin(xs_trn, ys_trn, xs_tst, ys_tst):
     tr_preds = clf.predict(X=xs_trn)
     #print(' '.join(['%0.15f' % _ for _ in clf.coef_]))
     mse = mean_squared_error(ys_tst, preds)
-    print('\t%7.3f' % (mse,))
+    print('\t%7.3f' % (mse,), end='')
     return preds, tr_preds, clf
 
