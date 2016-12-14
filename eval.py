@@ -7,7 +7,7 @@ import pandas as pd
 
 import util
 
-from fit_predict import fit_predict
+from fit_predict import fit_predict_rf, fit_predict_lin
 from tree_tools import dump_tree
 
 np.set_printoptions(linewidth = 250, threshold = 100000,
@@ -48,14 +48,6 @@ def report_perf(df_ts, preds, bs, verbose=0):
     return cumraw
 
 '''
-def assign_preds(sym, df_tr, df_ts):
-    preds = fit_predict(df_tr.loc[df_tr.sym == sym, input_cols],
-                        df_tr.loc[df_tr.sym == sym, output_col],
-                        df_ts.loc[df_ts.sym == sym, input_cols],
-                        df_ts.loc[df_ts.sym == sym, output_col])
-    df_ts.loc[df_ts.sym == sym, 'new_pred'] = preds
-'''
-'''
 raw columns:
     year, month, day, time, sym,
     0...20 Predictor Inputs,
@@ -78,7 +70,7 @@ def main(args):
     xtra_names = ' '.join([' x%02d' % (_,) for _ in range(n_xtra)])
     cnames = ('year month day time sym ' + pi_names + ' bs_spcfc bs '
               + xtra_names + ' target raw nickpred').split()
-    input_cols = (pi_names + ' sym bs_spcfc bs').split()
+    input_cols = (pi_names + ' bs_spcfc bs').split()
     grp_fit_cols = list(input_cols)
 
     if args.in_csv:  # READ CSV
@@ -107,23 +99,33 @@ def main(args):
     if args.limit:
         df = df.sample(n=args.limit)
 
-    if args.group_fit:
+    if args.noncv_fit:
         ''' GLOBAL FIT; no time-series '''
-        ts_preds = fit_predict(df[input_cols], df[output_col],
+        ts_preds, tr_preds, clf = fit_predict_lin(df[input_cols], df[output_col],
                             df[input_cols], df[output_col])
-        bcr = report_perf(df, ts_preds,  1, verbose=1)
-        scr = report_perf(df, ts_preds, -1, verbose=1)
-        cr  = report_perf(df, ts_preds, None, verbose=1)
+        _ = report_perf(df, ts_preds,  1, verbose=1)
+        _ = report_perf(df, ts_preds, -1, verbose=1)
+        _ = report_perf(df, ts_preds, None, verbose=1)
 
     from time_series_loo import TimeSeriesLOO
     with util.timed_execution('Constructing LOO'):
         loo = TimeSeriesLOO(df.period, args.tr_n, args.ts_n)
 
-    if args.group_fit_input:
+    model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
+    if args.group_fit:
         pred_col = 'grp'
         input_cols.append('grp')
+        if args.group_fit == 'RF':
+            input_cols.append('sym')
+        grp_model = model_lookup[args.group_fit]
     else:
+        grp_model = None
         pred_col = 'new_pred'
+
+    if args.sym_fit:
+        sym_model = model_lookup[args.sym_fit]
+    else:
+        sym_model = None
 
     tbcr = tscr = 0
     for tr_periods, ts_periods in loo():
@@ -135,13 +137,12 @@ def main(args):
         is_tr = df.period.isin(tr_periods)
         is_ts = df.period.isin(ts_periods)
 
-        if args.group_fit or args.group_fit_input:
+        if grp_model:
             with util.timed_execution('Fitting all symbols'):
-                ts_preds, tr_preds, clf = fit_predict(
-                    df.loc[is_tr, grp_fit_cols],
-                    df.loc[is_tr, output_col],
-                    df.loc[is_ts, grp_fit_cols],
-                    df.loc[is_ts, output_col])
+                ts_preds, tr_preds, clf = grp_model(df.loc[is_tr, grp_fit_cols],
+                                                    df.loc[is_tr, output_col],
+                                                    df.loc[is_ts, grp_fit_cols],
+                                                    df.loc[is_ts, output_col])
                 df.loc[is_tr, pred_col] = tr_preds
                 df.loc[is_ts, pred_col] = ts_preds
             if args.verbose > 0:
@@ -149,30 +150,29 @@ def main(args):
             bcr = report_perf(df.loc[is_ts], ts_preds, 1, verbose=args.verbose)
             if args.verbose > 0:
                 print('%s ' % (ts_desc,), end='')
-            if args.dump_group_fit:
+            if args.rf_group:
                 fn = 'grp_%s' % (ts_desc,)
-                dump_tree(clf, grp_fit_cols, fn=fn, dir=args.dump_group_fit,
-                          max_depth=4)
+                dump_tree(clf, grp_fit_cols, fn=fn, dir=args.rf_group, max_depth=4)
             scr = report_perf(df.loc[is_ts], ts_preds, -1, verbose=args.verbose)
             tbcr += bcr
             tscr += scr
 
-        if not args.group_fit:
+        if sym_model:
             for sym in sorted(df.sym.unique()):
                 is_sym = df.sym==sym
                 print('%24s %12s %12d %12d %4d ' % (
                     [_ for _ in tr_periods], [_ for _ in ts_periods],
                     (is_tr & is_sym).sum(), (is_ts & is_sym).sum(), sym), end='')
-                ts_preds, tr_preds, clf = fit_predict(
+                ts_preds, tr_preds, clf = sym_model(
                     df.loc[is_tr & is_sym, input_cols],
                     df.loc[is_tr & is_sym, output_col],
                     df.loc[is_ts & is_sym, input_cols],
                     df.loc[is_ts & is_sym, output_col])
                 df.loc[is_ts & is_sym, pred_col] = ts_preds
 
-                fn = 'sym_%s_%s' % (sym, ts_desc)
-                dump_tree(clf, input_cols, fn=fn, dir=args.dump_group_fit,
-                          max_depth=4)
+                if args.rf_sym:
+                    fn = 'sym_%s_%s' % (sym, ts_desc)
+                    dump_tree(clf, input_cols, fn=fn, dir=args.rf_sym, max_depth=4)
 
                 if args.verbose == 2:
                     print('%s %2d ' % (ts_desc, sym), end='')
@@ -181,6 +181,7 @@ def main(args):
                     scr = report_perf(df.loc[is_ts & is_sym], ts_preds, -1)
                     tbcr += bcr
                     tscr += scr
+
     bcr = report_perf(df, df[pred_col].values, 1, verbose=1)
     scr = report_perf(df, df[pred_col].values, -1, verbose=1)
     cr = report_perf(df, df[pred_col].values, None, verbose=1)
@@ -202,7 +203,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_file')
     parser.add_argument('--in_csv')
-    parser.add_argument('--dump_group_fit')
     parser.add_argument('--results_file',
                         default='/home/John/Scratch/quanterra/results.txt')
     parser.add_argument('--tr_n', type=int, default=3)
@@ -211,8 +211,11 @@ if __name__ == '__main__':
     parser.add_argument('--cv_tests', type=int, default=10)
     parser.add_argument('--folds', type=int, default=10)
     parser.add_argument('--verbose', type=int, default=0)
-    parser.add_argument('--group_fit', type=int, default=0)
-    parser.add_argument('--group_fit_input', action='store_true')
+    parser.add_argument('--noncv_fit', type=int, default=0)
+    parser.add_argument('--group_fit')
+    parser.add_argument('--sym_fit')
+    parser.add_argument('--rf_group')
+    parser.add_argument('--rf_sym')
     parser.add_argument('--output_col', default='target')
 
     args = parser.parse_args(sys.argv[1:])

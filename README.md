@@ -1,4 +1,7 @@
-build_pred -> bslpcross -> write_data_set
+grp fit  [RF, LP, None]
+sym fit1 [RF, LP, None]
+sym fit2 [RF, LP, None]
+
 
 ============================== DATA GENERATION ==============================
 write_data_set.m generates the data set.
