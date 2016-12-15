@@ -114,14 +114,12 @@ def main(args):
 
     model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
     if args.group_fit:
-        pred_col = 'grp'
         sym_inputs.append('grp_pred')
         if args.group_fit == 'RF':
             grp_inputs.append('sym')
         grp_model = model_lookup[args.group_fit]
     else:
         grp_model = None
-        pred_col = 'new_pred'
 
     if args.sym_fit:
         sym_model = model_lookup[args.sym_fit]
@@ -160,6 +158,7 @@ def main(args):
             if args.dump_grp:
                 fn = 'grp_%s' % (ts_desc,)
                 dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=4)
+            print()
 
         if sym_model:
             for sym in sorted(df.sym.unique()):
@@ -174,9 +173,9 @@ def main(args):
                     df.loc[is_ts & is_sym, output_col])
                 df.loc[is_ts & is_sym, 'sym_pred'] = ts_preds
 
-                if args.rf_sym:
+                if args.dump_sym:
                     fn = 'sym_%s_%s' % (sym, ts_desc)
-                    dump_tree(clf, sym_inputs, fn=fn, dir=args.rf_sym, max_depth=4)
+                    dump_tree(clf, sym_inputs, fn=fn, dir=args.dump_sym, max_depth=4)
 
                 if args.verbose == 2:
                     print('%s %2d ' % (ts_desc, sym), end='')
@@ -219,14 +218,12 @@ if __name__ == '__main__':
     parser.add_argument('--tr_n', type=int, default=3)
     parser.add_argument('--ts_n', type=int, default=1)
     parser.add_argument('--limit', type=int)
-    parser.add_argument('--cv_tests', type=int, default=10)
-    parser.add_argument('--folds', type=int, default=10)
     parser.add_argument('--verbose', type=int, default=0)
     parser.add_argument('--noncv_fit', type=int, default=0)
     parser.add_argument('--group_fit')
     parser.add_argument('--sym_fit')
     parser.add_argument('--dump_grp')
-    parser.add_argument('--rf_sym')
+    parser.add_argument('--dump_sym')
     parser.add_argument('--output_col', default='target')
 
     args = parser.parse_args(sys.argv[1:])
