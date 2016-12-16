@@ -18,14 +18,15 @@ pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
 def report_perf(df_ts, preds, bs, verbose=0):
+    profit = df_ts.raw.values.copy()
+    preds = preds.copy()
     if bs:
         ix =  np.where(df_ts.bs == bs)[0]
-        profit = bs * df_ts.iloc[ix]['raw'].values
+        profit = bs * profit[ix]
         asc = bs < 0
     else:
         bs = 0
         ix = range(len(df_ts))
-        profit = df_ts.raw.values
         asc = False
         # invert sell polarities (both prediction and raw target)
         sell_ix =  np.where(df_ts.bs == -1)[0]
@@ -46,6 +47,14 @@ def report_perf(df_ts, preds, bs, verbose=0):
         print('%+d %10.4f  %3.0f%%  %8.0f  %8.4f' % (
             bs, srtd.iloc[i_max].preds, pct_taken, cumraw, cumraw/len(srtd)))
     return cumraw
+
+
+def report_all_perf(df, ys, verbose):
+    _  = report_perf(df, ys,  1, verbose=verbose)
+    _  = report_perf(df, ys, -1, verbose=verbose)
+    cr = report_perf(df, ys, None, verbose=verbose)
+    print('Global Profit: %10.2f' % (cr,))
+
 
 '''
 raw columns:
@@ -97,6 +106,8 @@ def main(args):
 
     with util.timed_execution('Reading %s' % (args.in_file,)):
         df = load(args.in_file)  # READ DATAFRAME
+    if args.sym: # limit to only symbol
+        df = df.loc[df.sym==args.sym]
     if args.limit:
         df = df.sample(n=args.limit)
 
@@ -113,11 +124,11 @@ def main(args):
         loo = TimeSeriesLOO(df.period, args.tr_n, args.ts_n)
 
     model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
-    if args.group_fit:
+    if args.grp_fit:
         sym_inputs.append('grp_pred')
-        if args.group_fit == 'RF':
+        if args.grp_fit == 'RF':
             grp_inputs.append('sym')
-        grp_model = model_lookup[args.group_fit]
+        grp_model = model_lookup[args.grp_fit]
     else:
         grp_model = None
 
@@ -137,7 +148,7 @@ def main(args):
         is_ts = df.period.isin(ts_periods)
 
         if grp_model:
-            with util.timed_execution('Fitting all symbols', end=''):
+            with util.timed_execution('Fitting all symbols'):
                 print('%24s %12s %12d %12d ' % (
                     [_ for _ in tr_periods], [_ for _ in ts_periods],
                     is_tr.sum(), is_ts.sum()), end='')
@@ -148,13 +159,7 @@ def main(args):
                 df.loc[is_tr, 'grp_pred'] = tr_preds
                 df.loc[is_ts, 'grp_pred'] = ts_preds
             if args.verbose > 0:
-                print('%s ' % (ts_desc,), end='')
-            bcr = report_perf(df.loc[is_ts], ts_preds, 1, verbose=args.verbose)
-            if args.verbose > 0:
-                print('%s ' % (ts_desc,), end='')
-            scr = report_perf(df.loc[is_ts], ts_preds, -1, verbose=args.verbose)
-            tbcr += bcr
-            tscr += scr
+                report_all_perf(df.loc[is_ts], ts_preds, verbose=1)
             if args.dump_grp:
                 fn = 'grp_%s' % (ts_desc,)
                 dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=4)
@@ -178,27 +183,16 @@ def main(args):
                     dump_tree(clf, sym_inputs, fn=fn, dir=args.dump_sym, max_depth=4)
 
                 if args.verbose == 2:
-                    print('%s %2d ' % (ts_desc, sym), end='')
-                    bcr = report_perf(df.loc[is_ts & is_sym], ts_preds,  1)
-                    print('%s %2d ' % (ts_desc, sym), end='')
-                    scr = report_perf(df.loc[is_ts & is_sym], ts_preds, -1)
-                    tbcr += bcr
-                    tscr += scr
+                    report_all_perf(df.loc[is_ts & is_sym], ts_preds, verbose=1)
                 print()
 
     if grp_model:
         print('GROUP FIT PERFORMANCE')
-        bcr = report_perf(df, df.grp_pred.values,  1, verbose=1)
-        scr = report_perf(df, df.grp_pred.values, -1, verbose=1)
-        cr  = report_perf(df, df.grp_pred.values, None, verbose=1)
-        print('Global Profit: %10.2f' % (cr,))
+        report_all_perf(df, df.grp_pred.values, verbose=1)
 
     if sym_model:
         print('SYMBOL FIT PERFORMANCE')
-        bcr = report_perf(df, df.sym_pred.values,  1, verbose=1)
-        scr = report_perf(df, df.sym_pred.values, -1, verbose=1)
-        cr  = report_perf(df, df.sym_pred.values, None, verbose=1)
-        print('Global Profit: %10.2f' % (cr,))
+        report_all_perf(df, df.sym_pred.values, verbose=1)
 
 if __name__ == '__main__':
     import argparse
@@ -218,13 +212,15 @@ if __name__ == '__main__':
     parser.add_argument('--tr_n', type=int, default=3)
     parser.add_argument('--ts_n', type=int, default=1)
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--sym', type=int)
     parser.add_argument('--verbose', type=int, default=0)
     parser.add_argument('--noncv_fit', type=int, default=0)
-    parser.add_argument('--group_fit')
+    parser.add_argument('--grp_fit')
     parser.add_argument('--sym_fit')
     parser.add_argument('--dump_grp')
     parser.add_argument('--dump_sym')
     parser.add_argument('--output_col', default='target')
 
     args = parser.parse_args(sys.argv[1:])
+    print(args)
     main(args)

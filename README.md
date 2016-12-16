@@ -299,3 +299,11 @@ RF, trees=100, min_split=300, output='raw'
 -1     0.0894   69%   6606313    0.9909
 +0     0.0268   67%  13319712    0.9862
 Global Profit: 13319711.74
+
+python eval.py ~/Scratch/quantera/prj2 --sym_fit RF --verbose 1 --target raw
+SYMBOL FIT PERFORMANCE
++1     0.0066   67%   6715010    0.9818
+-1     0.0758   69%   6604665    0.9907
++0    -0.0752   69%  13313450    0.9857
+Global Profit: 13313450.15
+user	3229m44.392s

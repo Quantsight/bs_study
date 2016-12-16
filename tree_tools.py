@@ -196,7 +196,8 @@ def tree_str(clf, feature_names=None, outfile=sys.stdout, full=True,
 
 def get_feature_importances(clf, feature_names):
     assert len(clf.feature_importances_) == len(feature_names)
-    total_importance = np.sum(clf.feature_importances_)
+    # often no feature is important, make total >= 1.0 to avoid zero division
+    total_importance = max(1, np.sum(clf.feature_importances_))
     imp_weights = clf.feature_importances_ / total_importance
     return sorted(zip(imp_weights, feature_names), reverse=True)
 
