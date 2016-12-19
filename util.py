@@ -7,7 +7,8 @@ import sys
 @contextlib.contextmanager
 def timed_execution(descr, end='\n', strm=sys.stderr):
     start = datetime.datetime.now()
-    print('%s ' % (descr, ), end="", file=strm)
+    print('%s %s ' % (start.strftime("%Y-%m-%d %H:%M"), descr, ), end="",
+          file=strm)
     strm.flush()
     yield
     td = datetime.datetime.now() - start
@@ -16,3 +17,20 @@ def timed_execution(descr, end='\n', strm=sys.stderr):
     hms = '%02d:%02d:%02d' % (hours, minutes, seconds)
     print(hms, end=end, file=strm)
     strm.flush()
+
+
+def ftp_creds(config_fname):
+    with open(config_fname, 'r') as f:
+        server   = f.readline()
+        username = f.readline()
+        password = f.readline()
+    return server, username, password
+
+import ftplib
+def put_ftp(df, put_path, config_fname):
+    server, username, password = ftp_creds(config_fname)
+    session = ftplib.FTP(server, username, password)
+    file = open('kitten.jpg', 'rb')  # file to send
+    session.storbinary('STOR kitten.jpg', file)  # send the file
+    file.close()  # close file and FTP
+    session.quit()

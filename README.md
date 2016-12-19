@@ -307,3 +307,44 @@ SYMBOL FIT PERFORMANCE
 +0    -0.0752   69%  13313450    0.9857
 Global Profit: 13313450.15
 user	3229m44.392s
+
+
+python eval.py ~/Scratch/quantera/prj2 --grp_fit RF --no_RF_sym --verbose 1 --output_col raw
+GROUP FIT PERFORMANCE
++1     0.0516   64%  12626320    1.8460
+-1     0.0027   65%  12230528    1.8346
++0    -0.0301   66%  24854439    1.8402
+Global Profit: 24854439.06
+user    4974m36.892s
+
+python eval.py ~/Scratch/quantera/prj2 --grp_fit RF --sym_fit LP --verbose 1 --output_col raw
+Is the drop in performance from grp to sym due to sym-LP fitting on "raw" output (i.e. fitting outliers?)
+GROUP FIT PERFORMANCE
++1     0.0172   65%  12618452    1.8449
+-1     0.0251   65%  12222039    1.8333
++0     0.0123   65%  24836524    1.8389
+Global Profit: 24836523.95
++1    -0.1530   67%   6385444    0.9336
+-1     0.2740   68%   6211587    0.9317
++0    -0.2252   68%  12593332    0.9324
+Global Profit: 12593332.19
+
+++ python eval.py /home/jprior/Scratch/quantera/prj2 --grp_fit RF --sym_fit LP --verbose 1
+The drop in performance from grp to sym is NOT due to sym-LP fitting on "raw" output (i.e. fitting outliers)
+GROUP FIT PERFORMANCE
++1     0.1016   64%  12690691    1.8554
+-1    -0.0126   66%  12263228    1.8395
++0     0.0700   65%  24948866    1.8472
+Global Profit: 24948865.83
+[[    1.00     0.62]
+ [    0.62     1.00]]
+SYMBOL FIT PERFORMANCE
++1    -0.4405   71%   6369058    0.9312
+-1     0.5895   72%   6268665    0.9403
++0    -0.6063   73%  12632178    0.9353
+Global Profit: 12632178.50
+
+## Does symbol as an input to grp-RF make a difference?
+++ python eval.py /home/jprior/Scratch/quantera/prj2 --grp_fit RF --no_RF_sym --verbose 1 --output_col raw
+
+

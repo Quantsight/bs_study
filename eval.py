@@ -13,11 +13,10 @@ from tree_tools import dump_tree
 np.set_printoptions(linewidth = 250, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
 pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
-pd.set_option('display.max_columns', pd.util.terminal.get_terminal_size()[0])
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
-def report_perf(df_ts, preds, bs, verbose=0):
+def report_perf(df_ts, preds, bs, verbose=1):
     profit = df_ts.raw.values.copy()
     preds = preds.copy()
     if bs:
@@ -49,12 +48,12 @@ def report_perf(df_ts, preds, bs, verbose=0):
     return cumraw
 
 
-def report_all_perf(df, ys, verbose):
+def report_all_perf(df, ys, verbose=1):
     _  = report_perf(df, ys,  1, verbose=verbose)
     _  = report_perf(df, ys, -1, verbose=verbose)
     cr = report_perf(df, ys, None, verbose=verbose)
     print('Global Profit: %10.2f' % (cr,))
-
+    print(np.corrcoef(df.grp_pred, df.sym_pred))
 
 '''
 raw columns:
@@ -115,9 +114,9 @@ def main(args):
         ''' GLOBAL FIT; no time-series '''
         ts_preds, tr_preds, clf = fit_predict_lin(df[sym_inputs], df[output_col],
                             df[sym_inputs], df[output_col])
-        _ = report_perf(df, ts_preds,  1, verbose=1)
-        _ = report_perf(df, ts_preds, -1, verbose=1)
-        _ = report_perf(df, ts_preds, None, verbose=1)
+        _ = report_perf(df, ts_preds,  1)
+        _ = report_perf(df, ts_preds, -1)
+        _ = report_perf(df, ts_preds, None)
 
     from time_series_loo import TimeSeriesLOO
     with util.timed_execution('Constructing LOO'):
@@ -126,7 +125,7 @@ def main(args):
     model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
     if args.grp_fit:
         sym_inputs.append('grp_pred')
-        if args.grp_fit == 'RF':
+        if args.grp_fit == 'RF' and not args.no_RF_sym:
             grp_inputs.append('sym')
         grp_model = model_lookup[args.grp_fit]
     else:
@@ -137,7 +136,6 @@ def main(args):
     else:
         sym_model = None
 
-    tbcr = tscr = 0
     for tr_periods, ts_periods in loo():
         assert len(tr_periods) == args.tr_n
         assert len(ts_periods) == args.ts_n
@@ -159,11 +157,11 @@ def main(args):
                 df.loc[is_tr, 'grp_pred'] = tr_preds
                 df.loc[is_ts, 'grp_pred'] = ts_preds
             if args.verbose > 0:
-                report_all_perf(df.loc[is_ts], ts_preds, verbose=1)
+                report_all_perf(df.loc[is_ts], ts_preds)
             if args.dump_grp:
                 fn = 'grp_%s' % (ts_desc,)
                 dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=4)
-            print()
+            sys.stdout.flush()
 
         if sym_model:
             for sym in sorted(df.sym.unique()):
@@ -183,16 +181,21 @@ def main(args):
                     dump_tree(clf, sym_inputs, fn=fn, dir=args.dump_sym, max_depth=4)
 
                 if args.verbose == 2:
-                    report_all_perf(df.loc[is_ts & is_sym], ts_preds, verbose=1)
-                print()
+                    report_all_perf(df.loc[is_ts & is_sym], ts_preds)
+            sys.stdout.flush()
 
     if grp_model:
         print('GROUP FIT PERFORMANCE')
-        report_all_perf(df, df.grp_pred.values, verbose=1)
+        report_all_perf(df, df.grp_pred.values)
 
     if sym_model:
         print('SYMBOL FIT PERFORMANCE')
-        report_all_perf(df, df.sym_pred.values, verbose=1)
+        report_all_perf(df, df.sym_pred.values)
+
+    if args.dump_preds:
+        df['year month day time sym bs raw grp_pred sym_pred'.split()
+            ].to_csv(args.dump_preds, sep=',', header=True, index=True)
+
 
 if __name__ == '__main__':
     import argparse
@@ -208,7 +211,7 @@ if __name__ == '__main__':
     parser.add_argument('in_file')
     parser.add_argument('--in_csv')
     parser.add_argument('--results_file',
-                        default='/home/John/Scratch/quanterra/results.txt')
+                        default='/home/John/Scratch/quantera/results.txt')
     parser.add_argument('--tr_n', type=int, default=3)
     parser.add_argument('--ts_n', type=int, default=1)
     parser.add_argument('--limit', type=int)
@@ -219,6 +222,8 @@ if __name__ == '__main__':
     parser.add_argument('--sym_fit')
     parser.add_argument('--dump_grp')
     parser.add_argument('--dump_sym')
+    parser.add_argument('--dump_preds')
+    parser.add_argument('--no_RF_sym', action='store_true')
     parser.add_argument('--output_col', default='target')
 
     args = parser.parse_args(sys.argv[1:])
