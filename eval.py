@@ -216,7 +216,7 @@ if __name__ == '__main__':
     parser.add_argument('--ts_n', type=int, default=1)
     parser.add_argument('--limit', type=int)
     parser.add_argument('--sym', type=int)
-    parser.add_argument('--verbose', type=int, default=0)
+    parser.add_argument('--verbose', type=int, default=1)
     parser.add_argument('--noncv_fit', type=int, default=0)
     parser.add_argument('--grp_fit')
     parser.add_argument('--sym_fit')
