@@ -11,7 +11,7 @@ from sklearn.metrics import mean_squared_error
 
 def fit_predict_rf(xs_trn, ys_trn, xs_tst, ys_tst):
     clf = RandomForestRegressor(oob_score=False,
-        n_estimators=100, min_samples_split=300, n_jobs=-1)
+        n_estimators=128, min_samples_split=300, n_jobs=-1)
     # clf = cross_validate_rf(clf, xs_trn, ys_trn, n_iter=1.0, fit_params=None)
     clf.fit(xs_trn, ys_trn)
     tr_preds = clf.predict(X=xs_trn)
