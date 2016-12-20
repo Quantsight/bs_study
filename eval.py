@@ -216,9 +216,11 @@ def main(args):
 
     if args.dump_preds:
         df['year month day time sym bs raw grp_pred_trn grp_pred_tst sym_pred_test'.split()
-            ].to_csv(args.dump_preds, sep=',', header=True, index=True)
+            ].to_csv(args.dump_preds, sep=',', header=True, index=True,
+                     compression='gzip')
         path = ''
-        ftp.put(path, out_fn= args.dump_preds, config_fn = args.ftp_config)
+        ftp.put(args.dump_preds, out_path=path, out_fn='test',
+                 config_fn=args.ftp_config)
 
 
 if __name__ == '__main__':
