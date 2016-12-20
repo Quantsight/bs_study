@@ -281,70 +281,98 @@ ans =
         0.21  13553076.93
 
 
-Hypothesis: RF is better than lp
-Predict target [-20,20] & sort on it
-Result: worse at both buys & sells
-RF, trees=100, min_split=300, output='target'
-+1     0.0762   67%   6765197    0.9891
--1     0.0118   68%   6569156    0.9854
-+0     0.0545   67%  13326354    0.9867
-Global Profit: 13326353.69
-
-
-Hypothesis: RF is less sensitive to outliers (they don't affect the "slope" of middling points)
-Predict raw & sort on it
-Result: worse at longs, better at shorts
-RF, trees=100, min_split=300, output='raw'
-+1     0.0248   67%   6719762    0.9825
--1     0.0894   69%   6606313    0.9909
-+0     0.0268   67%  13319712    0.9862
-Global Profit: 13319711.74
-
-python eval.py ~/Scratch/quantera/prj2 --sym_fit RF --verbose 1 --target raw
+python eval.py --in_csv /home/jprior/scratch/grp1.ds.txt /home/jprior/scratch/prj2 --sym_fit LP
 SYMBOL FIT PERFORMANCE
-+1     0.0066   67%   6715010    0.9818
--1     0.0758   69%   6604665    0.9907
-+0    -0.0752   69%  13313450    0.9857
-Global Profit: 13313450.15
-user	3229m44.392s
++1     0.2333   67%   6846023    1.0009
+-1    -0.1672   69%   6709962    1.0065
++0     0.2054   68%  13553077    1.0035
+Global Profit: 13553076.93
 
 
-python eval.py ~/Scratch/quantera/prj2 --grp_fit RF --no_RF_sym --verbose 1 --output_col raw
+python eval.py /home/jprior/scratch/prj2 --grp_fit LP --sym_fit LP
 GROUP FIT PERFORMANCE
-+1     0.0516   64%  12626320    1.8460
--1     0.0027   65%  12230528    1.8346
-+0    -0.0301   66%  24854439    1.8402
-Global Profit: 24854439.06
-user    4974m36.892s
-
-python eval.py ~/Scratch/quantera/prj2 --grp_fit RF --sym_fit LP --verbose 1 --output_col raw
-Is the drop in performance from grp to sym due to sym-LP fitting on "raw" output (i.e. fitting outliers?)
-GROUP FIT PERFORMANCE
-+1     0.0172   65%  12618452    1.8449
--1     0.0251   65%  12222039    1.8333
-+0     0.0123   65%  24836524    1.8389
-Global Profit: 24836523.95
-+1    -0.1530   67%   6385444    0.9336
--1     0.2740   68%   6211587    0.9317
-+0    -0.2252   68%  12593332    0.9324
-Global Profit: 12593332.19
-
-++ python eval.py /home/jprior/Scratch/quantera/prj2 --grp_fit RF --sym_fit LP --verbose 1
-The drop in performance from grp to sym is NOT due to sym-LP fitting on "raw" output (i.e. fitting outliers)
-GROUP FIT PERFORMANCE
-+1     0.1016   64%  12690691    1.8554
--1    -0.0126   66%  12263228    1.8395
-+0     0.0700   65%  24948866    1.8472
-Global Profit: 24948865.83
-[[    1.00     0.62]
- [    0.62     1.00]]
++1     0.3022   67%   6411436    0.9374
+-1    -0.3062   67%   6467822    0.9702
++0     0.3022   67%  12877702    0.9535
+Global Profit: 12877701.99
+[[    1.00     0.19]
+ [    0.19     1.00]]
 SYMBOL FIT PERFORMANCE
-+1    -0.4405   71%   6369058    0.9312
--1     0.5895   72%   6268665    0.9403
-+0    -0.6063   73%  12632178    0.9353
-Global Profit: 12632178.50
++1     0.0259   73%   6607341    0.9660
+-1    -0.0617   72%   6508455    0.9763
++0     0.0619   72%  13112503    0.9708
 
-## Does symbol as an input to grp-RF make a difference?
-++ python eval.py /home/jprior/Scratch/quantera/prj2 --grp_fit RF --no_RF_sym --verbose 1 --output_col raw
+python eval.py /home/jprior/scratch/prj2 --sym_fit RF
+SYMBOL FIT PERFORMANCE
++1     0.1520   66%   6766087    0.9892
+-1     0.0125   68%   6580294    0.9870
++0     0.0799   67%  13338539    0.9876
+Global Profit: 13338539.18
 
 
+python eval.py /home/jprior/scratch/prj2 --grp_fit LP
+GROUP FIT PERFORMANCE
++1     0.3022   67%   6411436    0.9374
+-1    -0.3062   67%   6467822    0.9702
++0     0.3022   67%  12877702    0.9535
+Global Profit: 12877701.99
+
+
+python eval.py /home/jprior/scratch/prj2 --grp_fit RF --no_RF_sym
+GROUP FIT PERFORMANCE
++1     0.1959   66%   6848491    1.0013
+-1    -0.0769   68%   6768719    1.0153
++0     0.1002   68%  13602552    1.0071
+Global Profit: 13602551.51
+
+
+python eval.py /home/jprior/scratch/prj2 --grp_fit RF
+GROUP FIT PERFORMANCE
++1     0.1371   67%   6933605    1.0137
+-1    -0.1166   67%   6846499    1.0270
++0     0.1371   67%  13775751    1.0199
+Global Profit: 13775751.36
+
+
+python eval.py /home/jprior/scratch/prj2 --grp_fit LP --sym_fit RF
+GROUP FIT PERFORMANCE
++1     0.3022   67%   6411436    0.9374
+-1    -0.3062   67%   6467822    0.9702
++0     0.3022   67%  12877702    0.9535
+Global Profit: 12877701.99
+[[    1.00     0.34]
+ [    0.34     1.00]]
+SYMBOL FIT PERFORMANCE
++1    -0.6258   74%   5728558    0.8375
+-1     0.9891   82%   5600848    0.8401
++0    -0.7866   78%  11308929    0.8373
+
+
+python eval.py /home/jprior/scratch/prj2 --grp_fit RF --sym_fit LP
+GROUP FIT PERFORMANCE
++1     0.2035   66%   6932444    1.0136
+-1    -0.0323   69%   6854243    1.0281
++0     0.0831   68%  13782043    1.0204
+Global Profit: 13782042.80
+[[    1.00    -0.27]
+ [   -0.27     1.00]]
+SYMBOL FIT PERFORMANCE
++1     1.0398   28%   7039363    1.0292
+-1    -0.9451   29%   6863303    1.0295
++0     0.9452   29%  13899594    1.0291
+Global Profit: 13899594.37
+
+
+python eval.py /home/jprior/scratch/prj2 --grp_fit RF --sym_fit RF
+GROUP FIT PERFORMANCE
++1     0.1861   66%   6960369    1.0176
+-1    -0.0766   68%   6842328    1.0264
++0     0.1766   66%  13789777    1.0210
+Global Profit: 13789777.49
+[[    1.00    -0.34]
+ [   -0.34     1.00]]
+SYMBOL FIT PERFORMANCE
++1    -8.2985   88%   7422751    1.0852
+-1     7.9228   88%   7602878    1.1404
++0    -8.1108   88%  15019587    1.1120
+Global Profit: 15019586.92
