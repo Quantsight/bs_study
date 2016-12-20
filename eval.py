@@ -9,10 +9,12 @@ import util
 
 from fit_predict import fit_predict_rf, fit_predict_lin
 from tree_tools import dump_tree
+import ftp
 
 np.set_printoptions(linewidth = 250, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
 pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
+pd.set_option('display.max_columns', 28)
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
@@ -47,13 +49,23 @@ def report_perf(df_ts, preds, bs, verbose=1):
             bs, srtd.iloc[i_max].preds, pct_taken, cumraw, cumraw/len(srtd)))
     return cumraw
 
-
+from scipy.stats import spearmanr
 def report_all_perf(df, ys, verbose=1):
     _  = report_perf(df, ys,  1, verbose=verbose)
     _  = report_perf(df, ys, -1, verbose=verbose)
     cr = report_perf(df, ys, None, verbose=verbose)
     print('Global Profit: %10.2f' % (cr,))
-    print(np.corrcoef(df.grp_pred_tst, df.sym_pred))
+
+    if 'grp_pred_tst' in df.columns:
+        if np.isnan(df.grp_pred_tst).sum() > 0:
+            raise Exception('no nans should be present in df.grp_pred_tst')
+        src = spearmanr(df.grp_pred_tst, ys)[0]
+        print('ys / GRP_PRED_TEST SRC: %8.5f' % (src,))
+
+    # there can be NaN's in symbol fit if only group fit had been called.
+    if np.isnan(df.sym_pred_test).sum() == 0:
+        src = spearmanr(df.sym_pred_test, ys)[0]
+        print('ys / SYM_PRED      SRC: %8.5f' % (src,))
 
 '''
 raw columns:
@@ -81,22 +93,24 @@ def main(args):
     sym_inputs = (pi_names + ' bs_spcfc bs').split()
     grp_inputs = list(sym_inputs) # create a copy
 
+    row_limit = int(args.limit) if args.limit else None
+
     if args.in_csv:  # READ CSV
         if os.path.isfile(args.in_file):
             print('%s already exists and would be overwritten' % (args.in_file))
             exit(0)
         with util.timed_execution('Reading %s' % (args.in_csv,)):
             df = pd.read_csv(args.in_csv, delim_whitespace=True, header=None,
-                             nrows=args.limit, dtype=np.float64)
+                             nrows=row_limit, dtype=np.float64)
             df.columns = cnames
             df.year = df.year.astype(int)
             df.month = df.month.astype(int)
             df.day = df.day.astype(int)
             df.sym = df.sym.astype(int)
             df.bs = df.bs.astype(int)
-            df['grp_pred_trn'] = 0  # placeholder for predictions (in-sample)
-            df['grp_pred_tst'] = 0  # placeholder for predictions (out-of-sample)
-            df['sym_pred'] = 0  # placeholder for predictions
+            df['grp_pred_trn'] = np.nan # placeholder for predictions (in-sample)
+            df['grp_pred_tst'] = np.nan # placeholder for predictions (out-of-sample)
+            df['sym_pred_test'] = np.nan  # placeholder for predictions
         with util.timed_execution('Creating months'):
             # don't forget the axis!!!
             df['period'] = df.apply(lambda x:
@@ -108,8 +122,8 @@ def main(args):
         df = load(args.in_file)  # READ DATAFRAME
     if args.sym: # limit to only symbol
         df = df.loc[df.sym==args.sym]
-    if args.limit:
-        df = df.sample(n=args.limit)
+    if row_limit:
+        df = df.sample(n=row_limit)
 
     if args.noncv_fit:
         ''' GLOBAL FIT; no time-series '''
@@ -125,11 +139,14 @@ def main(args):
 
     model_lookup = {'RF':fit_predict_rf, 'LP':fit_predict_lin}
     if args.grp_fit:
-        sym_inputs.append('grp_pred_trn')
+        sym_inputs_trn = sym_inputs + ['grp_pred_trn']
+        sym_inputs_tst = sym_inputs + ['grp_pred_tst']
         if args.grp_fit == 'RF' and not args.no_RF_sym:
             grp_inputs.append('sym')
         grp_model = model_lookup[args.grp_fit]
     else:
+        sym_inputs_trn = list(sym_inputs)
+        sym_inputs_tst = list(sym_inputs)
         grp_model = None
 
     if args.sym_fit:
@@ -137,6 +154,9 @@ def main(args):
     else:
         sym_model = None
 
+    df['grp_pred_trn'] = np.nan
+    df['grp_pred_tst'] = np.nan
+    df['sym_pred_test'] = np.nan
     for trn_periods, tst_periods in loo():
         assert len(trn_periods) == args.trn_n
         assert len(tst_periods) == args.tst_n
@@ -158,6 +178,7 @@ def main(args):
                 df.loc[is_trn, 'grp_pred_trn'] = trn_preds
                 df.loc[is_tst, 'grp_pred_tst'] = tst_preds
             if args.verbose > 0:
+                print('GROUP FIT PERFORMANCE')
                 report_all_perf(df.loc[is_tst], tst_preds)
             if args.dump_grp:
                 fn = 'grp_%s' % (tst_desc,)
@@ -171,17 +192,19 @@ def main(args):
                     [_ for _ in trn_periods], [_ for _ in tst_periods],
                     (is_trn & is_sym).sum(), (is_tst & is_sym).sum(), sym), end='')
                 tst_preds, trn_preds, clf = sym_model(
-                    df.loc[is_trn & is_sym, sym_inputs],
+                    df.loc[is_trn & is_sym, sym_inputs_trn],
                     df.loc[is_trn & is_sym, output_col],
-                    df.loc[is_tst & is_sym, sym_inputs],
+                    df.loc[is_tst & is_sym, sym_inputs_tst],
                     df.loc[is_tst & is_sym, output_col])
-                df.loc[is_tst & is_sym, 'sym_pred'] = tst_preds
+                df.loc[is_tst & is_sym, 'sym_pred_test'] = tst_preds
 
                 if args.dump_sym:
                     fn = 'sym_%s_%s' % (sym, tst_desc)
-                    dump_tree(clf, sym_inputs, fn=fn, dir=args.dump_sym, max_depth=4)
+                    dump_tree(clf, sym_inputs_trn, fn=fn, dir=args.dump_sym,
+                              max_depth=4)
 
                 if args.verbose == 2:
+                    print('SYMBOL FIT PERFORMANCE')
                     report_all_perf(df.loc[is_tst & is_sym], tst_preds)
                 sys.stdout.flush()
 
@@ -191,11 +214,13 @@ def main(args):
 
     if sym_model:
         print('SYMBOL FIT PERFORMANCE')
-        report_all_perf(df, df.sym_pred.values)
+        report_all_perf(df, df.sym_pred_test.values)
 
     if args.dump_preds:
-        df['year month day time sym bs raw grp_pred_trn grp_pred_tst sym_pred'.split()
+        df['year month day time sym bs raw grp_pred_trn grp_pred_tst sym_pred_test'.split()
             ].to_csv(args.dump_preds, sep=',', header=True, index=True)
+        path = ''
+        ftp.put(path, fn = args.dump_preds, config_fn = args.ftp_config)
 
 
 if __name__ == '__main__':
@@ -213,9 +238,10 @@ if __name__ == '__main__':
     parser.add_argument('--in_csv')
     parser.add_argument('--resultst_file',
                         default='/home/John/Scratch/quantera/results.txt')
+    parser.add_argument('--ftp_config', default='config.ini')
     parser.add_argument('--trn_n', type=int, default=3)
     parser.add_argument('--tst_n', type=int, default=1)
-    parser.add_argument('--limit', type=int)
+    parser.add_argument('--limit', type=float)
     parser.add_argument('--sym', type=int)
     parser.add_argument('--verbose', type=int, default=1)
     parser.add_argument('--noncv_fit', type=int, default=0)
