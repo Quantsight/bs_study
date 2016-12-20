@@ -56,9 +56,7 @@ def report_all_perf(df, ys, verbose=1):
     cr = report_perf(df, ys, None, verbose=verbose)
     print('Global Profit: %10.2f' % (cr,))
 
-    if 'grp_pred_tst' in df.columns:
-        if np.isnan(df.grp_pred_tst).sum() > 0:
-            raise Exception('no nans should be present in df.grp_pred_tst')
+    if np.isnan(df.grp_pred_tst).sum() == 0:
         src = spearmanr(df.grp_pred_tst, ys)[0]
         print('ys / GRP_PRED_TEST SRC: %8.5f' % (src,))
 
@@ -220,7 +218,7 @@ def main(args):
         df['year month day time sym bs raw grp_pred_trn grp_pred_tst sym_pred_test'.split()
             ].to_csv(args.dump_preds, sep=',', header=True, index=True)
         path = ''
-        ftp.put(path, fn = args.dump_preds, config_fn = args.ftp_config)
+        ftp.put(path, out_fn= args.dump_preds, config_fn = args.ftp_config)
 
 
 if __name__ == '__main__':
