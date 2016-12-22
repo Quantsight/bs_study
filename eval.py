@@ -54,7 +54,7 @@ def report_all_perf(df, ys, verbose=1):
     _  = report_perf(df, ys,  1, verbose=verbose)
     _  = report_perf(df, ys, -1, verbose=verbose)
     cr = report_perf(df, ys, None, verbose=verbose)
-    print('Global Profit: %10.2f' % (cr,))
+    # print('Global Profit: %10.2f' % (cr,))
 
     if np.isnan(df.grp_pred_tst).sum() == 0:
         src = spearmanr(df.grp_pred_tst, ys)[0]
@@ -63,7 +63,7 @@ def report_all_perf(df, ys, verbose=1):
     # there can be NaN's in symbol fit if only group fit had been called.
     if np.isnan(df.sym_pred_test).sum() == 0:
         src = spearmanr(df.sym_pred_test, ys)[0]
-        print('ys / SYM_PRED      SRC: %8.5f' % (src,))
+        print('ys / SYM_PRED_TEST SRC: %8.5f' % (src,))
 
 '''
 raw columns:
@@ -165,6 +165,7 @@ def main(args):
         is_tst = df.period.isin(tst_periods)
 
         if grp_model:
+            np.random.seed(0)
             with util.timed_execution('Fitting all symbols'):
                 print('%24s %12s %12d %12d ' % (
                     [_ for _ in trn_periods], [_ for _ in tst_periods],
@@ -184,6 +185,7 @@ def main(args):
             sys.stdout.flush()
 
         if sym_model:
+            np.random.seed(0)
             for sym in sorted(df.sym.unique()):
                 is_sym = df.sym==sym
                 print('%24s %12s %12d %12d %4d ' % (
