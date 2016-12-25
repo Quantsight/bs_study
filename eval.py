@@ -84,11 +84,15 @@ def main(args):
     output_col = args.output_col
     n_predictors = 19
     n_xtra = 10
-    pi_names = ' '.join([' p%02d' % (_,) for _ in range(n_predictors)])
+    pi_names   = ' '.join([' p%02d' % (_,) for _ in range(n_predictors)])
     xtra_names = ' '.join([' x%02d' % (_,) for _ in range(n_xtra)])
     cnames = ('year month day time sym ' + pi_names + ' bs_spcfc bs '
               + xtra_names + ' target raw nickpred').split()
     sym_inputs = (pi_names + ' bs_spcfc bs').split()
+    if args.input_time:
+        sym_inputs += ['time']
+    if args.input_extras:
+	sym_inputs += xtra_names.split()
     grp_inputs = list(sym_inputs) # create a copy
 
     row_limit = int(args.limit) if args.limit else None
@@ -253,6 +257,8 @@ if __name__ == '__main__':
     parser.add_argument('--dump_sym')
     parser.add_argument('--dump_preds')
     parser.add_argument('--no_RF_sym', action='store_true')
+    parser.add_argument('--input_extras', action='store_true')
+    parser.add_argument('--input_time', action='store_true')
     parser.add_argument('--output_col', default='target')
 
     args = parser.parse_args(sys.argv[1:])
