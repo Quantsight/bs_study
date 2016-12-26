@@ -185,7 +185,7 @@ def main(args):
                 report_all_perf(df.loc[is_tst], tst_preds)
             if args.dump_grp:
                 fn = 'grp_%s' % (tst_desc,)
-                dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=4)
+                dump_tree(clf, grp_inputs, fn=fn, dir=args.dump_grp, max_depth=8)
             sys.stdout.flush()
 
         if sym_model:
