@@ -376,3 +376,6 @@ SYMBOL FIT PERFORMANCE
 -1     7.9228   88%   7602878    1.1404
 +0    -8.1108   88%  15019587    1.1120
 Global Profit: 15019586.92
+
+
+do both sym_model and grp_model have separate param_dist{} dicts?
