@@ -10,8 +10,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 def fit_predict_rf(xs_trn, ys_trn, xs_tst, ys_tst):
-    clf = RandomForestRegressor(oob_score=True, criterion='mse',
-        n_estimators=256, min_samples_leaf=100, n_jobs=-1)
+    clf = RandomForestRegressor(oob_score=False,
+        n_estimators=128, min_samples_leaf=100, n_jobs=-1)
     # clf = cross_validate_rf(clf, xs_trn, ys_trn, n_iter=1.0, fit_params=None)
     clf.fit(xs_trn, ys_trn)
     # tr_preds = clf.predict(X=xs_trn)
@@ -29,10 +29,10 @@ def fit_predict_lin(xs_trn, ys_trn, xs_tst, ys_tst):
     xs_norm = xs_trn / stdx
     clf.fit(xs_norm, ys_trn)
     clf.coef_ /= stdx
-    preds = clf.predict(X=xs_tst)
+    ts_preds = clf.predict(X=xs_tst)
     tr_preds = clf.predict(X=xs_trn)
     #print(' '.join(['%0.15f' % _ for _ in clf.coef_]))
-    mse = mean_squared_error(ys_tst, preds)
+    mse = mean_squared_error(ys_tst, ts_preds)
     print('\t%7.3f' % (mse,))
-    return preds, tr_preds, clf
+    return ts_preds, tr_preds, clf
 
