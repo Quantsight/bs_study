@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-class ModelBase:
+class ModelBase(object):
     def __init__(self):
         self._clf = None
 
@@ -16,3 +16,5 @@ class ModelBase:
 
     def predict(self, xs):
         return self._clf.predict(X=xs)
+
+    def score(self, ):

@@ -379,3 +379,5 @@ Global Profit: 15019586.92
 
 
 do both sym_model and grp_model have separate param_dist{} dicts?
+do all models implement fit_transform() so that they can add another prediction column?
+FeatureUnion and Pipeline can be combined to create complex models.
