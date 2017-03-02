@@ -5,6 +5,8 @@ implement a "splitter" transform that is given a column to split on,
 and splits into N equal sized buckets, then creates models for each split
 (remembers what the split criteria is so that OOS rows can be routed correctly)
 
+? where does extra column (full of predictions) get added? Through fit_transform?
+
 YAGNI/TODO: split on continuous features [low,high)
 """
 import numpy as np
@@ -73,7 +75,7 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         ps = pd.Series(index=X.index)
         for bk in self._estimators.keys():
             subset = X[self.col_name] == bk
-            ps[subset] = self._estimators[bk].predict(X[subset], y[subset])
+            ps[subset] = self._estimators[bk].predict(X[subset])
         assert np.isnan(ps).any() == False
         return ps
 
@@ -81,7 +83,9 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         """
         fit() -> transform() -> ... add/remove columns to X
         """
-        return self.fit(X, y).transform(X)
+        self.fit(X, y)
+        ps = self.predict(X)
+        return np.concatenate((X, ps), axis=1)
 
 
 if __name__ == '__main__':
@@ -95,3 +99,4 @@ if __name__ == '__main__':
     y = pd.Series(np.random.randn(ROWS))
     clf = SplitEstimator('S', LinearRegression)
     clf.fit(df, y)
+    print clf.fit_transform(df, y)
