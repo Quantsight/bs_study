@@ -90,9 +90,8 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         fit() -> transform() -> ... add/remove columns to X
         """
         self.fit(X, y)
-        ps = self.predict(X)
+        ps = self.predict(X).values.reshape(y.shape[0], 1)
         return np.concatenate((X, ps), axis=1)
-
 
 if __name__ == '__main__':
     X, y = generate_test_data()
