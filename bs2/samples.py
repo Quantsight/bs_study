@@ -4,6 +4,8 @@ import pandas as pd
 
 from joblib import load, dump
 
+import util
+
 def main(args):
     n_predictors = 19
     n_xtra = 10
@@ -56,4 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('in_csv')
     parser.add_argument('out_file')
     parser.add_argument('--limit', type=float)
- 
+
+    args = parser.parse_args(sys.argv[1:])
+    print(args)
+    main(args)

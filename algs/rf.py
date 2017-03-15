@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 """
 from sklearn.metrics import mean_squared_error
-mse = mean_squared_error(ys_trn, ts_preds)
+mse = mean_squared_error(y, ts_preds)
 print('\t%7.3f' % (mse,))
 """
 
@@ -26,8 +26,13 @@ class RF(ModelBase):
         }
         return param_dist
 
-    def fit(self, xs_trn, ys_trn):
+    def fit(self, X, y):
         self._clf = RandomForestRegressor(**self._params)
         #oob_score=False, n_estimators=128,criterion='mse', min_samples_leaf=100, n_jobs=-1)
-        self._clf.fit(xs_trn, ys_trn)
+        self._clf.fit(X, y)
         return
+
+    def fit_transform(self, X, y):
+        self.fit(X, y)
+        ps = self.predict(X).values.reshape(y.shape[0], 1)
+        return np.concatenate((X, ps), axis=1)

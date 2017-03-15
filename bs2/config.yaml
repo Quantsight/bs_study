@@ -12,7 +12,7 @@ data_setup:
     extra_inputs: [sym,time]
     xN_inputs: true
 
-model:
+model_pipeline:
     -
         name: grp_fit
         clf: 

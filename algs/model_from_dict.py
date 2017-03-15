@@ -9,6 +9,13 @@ def from_dict(config):
     model = model_class(params=config['params'])
     return model
 
+def pipeline_from_dicts(dcts):
+    models = [(m['name'], from_dict(m['clf'])) for m in dcts]
+    from sklearn.pipeline import Pipeline
+    pipe = Pipeline(models)
+    return pipe
+
+
 if __name__ == '__main__':
     import test_data as td
     X, y = td.generate_test_data()
