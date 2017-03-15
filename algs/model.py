@@ -1,8 +1,9 @@
 from __future__ import print_function
 
 class ModelBase(object):
-    def __init__(self):
+    def __init__(self, params={}):
         self._clf = None
+        self._params = params
 
     def get_model(self):
         return self._clf
@@ -18,3 +19,4 @@ class ModelBase(object):
         return self._clf.predict(X=xs)
 
     def score(self, ):
+        pass

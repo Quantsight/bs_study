@@ -12,32 +12,29 @@ YAGNI/TODO: split on continuous features [low,high)
 import numpy as np
 import pandas as pd
 
-from sklearn.linear_model import LinearRegression
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline, make_pipeline
 
 class SplitEstimator(BaseEstimator, TransformerMixin):
-    def __init__(self, col_name, clf_class, n_buckets=None, max_buckets=100):
-        """
-        :param col_name: name of column to split on
-        :param n_buckets: if None, group by (discrete) values in column; else
-        split into N buckets
-        """
-        self.col_name = col_name
-        self.clf_class = clf_class
-
-        self._n_buckets = n_buckets
+    def __init__(self, **params):
+        self._params     = params['params']
+        self.split_on    = self._params['split_on'] # required
+        self.max_buckets = self._params.get('max_buckets', 100) # optional
+        self._n_buckets  = self._params.get('n_buckets', None) # optional
         self._buckets = None
         self._estimators = None
-        self._params = None  # will be applied to each estimator
-        self.max_buckets = max_buckets
+
+        clf_params = params['params']['split_clf']  # will be applied to each estimator
+        self.split_clf_class  = clf_params['class']
+        self.split_clf_params = clf_params['params']
+
 
     def get_params(self, deep=True):
         return self._params.copy()
 
     def set_params(self, **params):
         """
-        apply parameters to every estimator
+        PASS THROUGH parameters to every estimator
             - what if fit() hasn't been called?
             - what if fit() HAS been called?
         :param params: dict
@@ -47,25 +44,34 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         return self
 
     def fit(self, X, y=None):
+        """
+        :param split_on: name of column to split on
+        :param n_buckets: if None, group by (discrete) values in column; else
+        split into N buckets
+        """
         if not self._n_buckets:
             ''' Create buckets.
                 Bucket keys are the unique value routed to that bucket.
             '''
-            self._buckets = X[self.col_name].unique()
+            self._buckets = X[self.split_on].unique()
             n_buckets = len(self._buckets)
             assert n_buckets < self.max_buckets, 'TOO MANY BUCKETS: %s' % self._buckets
 
         # construct an estimator for each bucket:
-        self._estimators = {bk:self.clf_class() for bk in self._buckets}
+        self._estimators = {bk:self.split_clf_class(self.split_clf_params) 
+            for bk in self._buckets}
 
-        if self._params:
+        ''' not sure why have explicit call to set_params when can pass to
+            constructors (above)
+        if self.clf_params:
             for clf in self._estimators.values():
-                clf.set_params(self._params) # inplace?
+                clf.set_params(self.clf_params) # inplace?
+        '''
 
         # subset for each bucket value
         for bk in self._estimators.keys():
             # Here some logic to divide dataset
-            subset = X[self.col_name] == bk
+            subset = X[self.split_on] == bk
             self._estimators[bk].fit(X[subset], y[subset])
 
     def predict(self, X, y=None):
@@ -74,7 +80,7 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         # TODO: align predictions for subsets of elements of y
         ps = pd.Series(index=X.index)
         for bk in self._estimators.keys():
-            subset = X[self.col_name] == bk
+            subset = X[self.split_on] == bk
             ps[subset] = self._estimators[bk].predict(X[subset])
         assert np.isnan(ps).any() == False
         return ps
@@ -89,14 +95,20 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
 
 
 if __name__ == '__main__':
-    ROWS = 1000
-    SPLITS = 10
-    df = pd.DataFrame(np.random.randn(ROWS,4),columns=list('ABCD'))
-    split_vals = []
-    for _ in range(SPLITS):
-        split_vals.extend([_]*(ROWS/SPLITS))
-    df['S'] = split_vals
-    y = pd.Series(np.random.randn(ROWS))
+    X, y = generate_test_data()
+
+    from sklearn.linear_model import LinearRegression
     clf = SplitEstimator('S', LinearRegression)
     clf.fit(df, y)
     print clf.fit_transform(df, y)
+
+    '''
+    When applying models in a pipeline (using fit_transform to add a prediction
+    column), how do the next models know which of the previous columns are to be
+    used for prediction?
+    All of them?
+
+    How do you pass fit_params to CV so that all the models in the pipeline can be optmized?
+    "The purpose of the pipeline is to assemble several steps that can be cross-
+    validated together while setting different parameters. For this, it enables 
+    setting parameters of the various steps using their names and the parameter name separated by a __'''

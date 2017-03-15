@@ -39,8 +39,8 @@ class LP(ModelBase):
         return param_dist
 
     def fit(self, xs_trn, ys_trn):
-        self._clf = LinearRegression(fit_intercept=False, n_jobs=-1,
-                                     normalize=False)
+        self._clf = LinearRegression(**self._params)
+        #fit_intercept=False, n_jobs=-1,normalize=False)
         stdx = xs_trn.std(axis=0)
         stdx.replace(0, 1, inplace=True)
         xs_norm = xs_trn / stdx

@@ -22,7 +22,8 @@ class FM(ModelBase):
     def fit(self, xs_trn, ys_trn, order=2, rank=10, lr=0.001, n_epochs=1,
         batch_size=100, std=0.001, lda=1e-6, log_dir='/tmp/jprior/logs',
             verbosity=0):
-        self._clf = TFFMRegressor(
+        self._clf = TFFMRegressor(**self._params)
+        '''
             seed=0,
             order=order,
             rank=rank,
@@ -36,6 +37,7 @@ class FM(ModelBase):
             log_dir=log_dir,
             verbose=verbosity
         )
+        '''
         # tffm doesn't deal with DataFrames correctly (although it tries...)
         self._clf.fit(xs_trn.values, ys_trn.values, show_progress=True)
         return

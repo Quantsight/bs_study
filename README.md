@@ -1,6 +1,17 @@
-grp fit  [RF, LP, None]
-sym fit1 [RF, LP, None]
-sym fit2 [RF, LP, None]
+both (all?) wrapped models should implement:
+    fit()
+    transform()
+        add new prediction column (fit must be called first)
+        how to deal with NaN predictions?
+    fit_transform()
+        add new prediction column
+        how to deal with NaN predictions?
+    set/get param_dist()
+        how are params "passed down" (see Pipeline docs)
+        need set() so API can choose a subset of parameters and distributions for each parameter.
+
+do both sym_model and grp_model have separate param_dist{} dicts?
+FeatureUnion and Pipeline can be combined to create complex models.
 
 
 ============================== DATA GENERATION ==============================
@@ -287,97 +298,3 @@ SYMBOL FIT PERFORMANCE
 -1    -0.1672   69%   6709962    1.0065
 +0     0.2054   68%  13553077    1.0035
 Global Profit: 13553076.93
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit LP --sym_fit LP
-GROUP FIT PERFORMANCE
-+1     0.3022   67%   6411436    0.9374
--1    -0.3062   67%   6467822    0.9702
-+0     0.3022   67%  12877702    0.9535
-Global Profit: 12877701.99
-[[    1.00     0.19]
- [    0.19     1.00]]
-SYMBOL FIT PERFORMANCE
-+1     0.0259   73%   6607341    0.9660
--1    -0.0617   72%   6508455    0.9763
-+0     0.0619   72%  13112503    0.9708
-
-python eval.py /home/jprior/scratch/prj2 --sym_fit RF
-SYMBOL FIT PERFORMANCE
-+1     0.1520   66%   6766087    0.9892
--1     0.0125   68%   6580294    0.9870
-+0     0.0799   67%  13338539    0.9876
-Global Profit: 13338539.18
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit LP
-GROUP FIT PERFORMANCE
-+1     0.3022   67%   6411436    0.9374
--1    -0.3062   67%   6467822    0.9702
-+0     0.3022   67%  12877702    0.9535
-Global Profit: 12877701.99
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit RF --no_RF_sym
-GROUP FIT PERFORMANCE
-+1     0.1959   66%   6848491    1.0013
--1    -0.0769   68%   6768719    1.0153
-+0     0.1002   68%  13602552    1.0071
-Global Profit: 13602551.51
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit RF
-GROUP FIT PERFORMANCE
-+1     0.1371   67%   6933605    1.0137
--1    -0.1166   67%   6846499    1.0270
-+0     0.1371   67%  13775751    1.0199
-Global Profit: 13775751.36
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit LP --sym_fit RF
-GROUP FIT PERFORMANCE
-+1     0.3022   67%   6411436    0.9374
--1    -0.3062   67%   6467822    0.9702
-+0     0.3022   67%  12877702    0.9535
-Global Profit: 12877701.99
-[[    1.00     0.34]
- [    0.34     1.00]]
-SYMBOL FIT PERFORMANCE
-+1    -0.6258   74%   5728558    0.8375
--1     0.9891   82%   5600848    0.8401
-+0    -0.7866   78%  11308929    0.8373
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit RF --sym_fit LP
-GROUP FIT PERFORMANCE
-+1     0.2035   66%   6932444    1.0136
--1    -0.0323   69%   6854243    1.0281
-+0     0.0831   68%  13782043    1.0204
-Global Profit: 13782042.80
-[[    1.00    -0.27]
- [   -0.27     1.00]]
-SYMBOL FIT PERFORMANCE
-+1     1.0398   28%   7039363    1.0292
--1    -0.9451   29%   6863303    1.0295
-+0     0.9452   29%  13899594    1.0291
-Global Profit: 13899594.37
-
-
-python eval.py /home/jprior/scratch/prj2 --grp_fit RF --sym_fit RF
-GROUP FIT PERFORMANCE
-+1     0.1861   66%   6960369    1.0176
--1    -0.0766   68%   6842328    1.0264
-+0     0.1766   66%  13789777    1.0210
-Global Profit: 13789777.49
-[[    1.00    -0.34]
- [   -0.34     1.00]]
-SYMBOL FIT PERFORMANCE
-+1    -8.2985   88%   7422751    1.0852
--1     7.9228   88%   7602878    1.1404
-+0    -8.1108   88%  15019587    1.1120
-Global Profit: 15019586.92
-
-
-do both sym_model and grp_model have separate param_dist{} dicts?
-do all models implement fit_transform() so that they can add another prediction column?
-FeatureUnion and Pipeline can be combined to create complex models.

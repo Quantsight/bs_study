@@ -27,7 +27,7 @@ class RF(ModelBase):
         return param_dist
 
     def fit(self, xs_trn, ys_trn):
-        self._clf = RandomForestRegressor(oob_score=False, n_estimators=128,
-                                          criterion='mse', min_samples_leaf=100, n_jobs=-1)
+        self._clf = RandomForestRegressor(**self._params)
+        #oob_score=False, n_estimators=128,criterion='mse', min_samples_leaf=100, n_jobs=-1)
         self._clf.fit(xs_trn, ys_trn)
         return

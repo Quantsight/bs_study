@@ -1,0 +1,49 @@
+ftp:
+    host: ftp.texasvanbavel.com
+    user: johnp
+    pw: dataminer123!
+    path_root: farsight/
+
+data_setup:
+    no_time_series_fit: false
+    trn_n: 3
+    tst_n: 1
+    limit: null
+    extra_inputs: [sym,time]
+    xN_inputs: true
+
+model:
+    -
+        name: grp_fit
+        clf: 
+            class: RF
+            params:
+                n_estimators: 64
+            fit_params:
+                min_samples_leaf:
+                    min: 1
+                    max: 1000
+                    type: int
+        output_col: target
+        dump_file: grp_preds.txt
+        
+    -
+        name: sym_fit
+        clf:
+            class: SplitEstimator
+            params:
+                # 'split_on' is an argument to SplitEstimator.__init__()
+                split_on: A
+                # 'split_clf' is an argument to SplitEstimator.__init__()
+                # does each model split optimize its own params? (sym='ABC' gets different params than sym='DEF'?)
+                split_clf:
+                    class: RF
+                    params:
+                        n_estimators: 64
+                    fit_params:
+                        min_samples_leaf:
+                            min: 1
+                            max: 1000
+                            type: int
+        output_col: target
+        dump_file: sym_preds.txt
