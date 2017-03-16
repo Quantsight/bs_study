@@ -57,8 +57,8 @@ def report_perf(df_ts, preds, bs, verbose=1):
 
 from scipy.stats import spearmanr
 def report_all_perf(df, ys, verbose=1):
-    _  = report_perf(df, ys,  1, verbose=verbose)
-    _  = report_perf(df, ys, -1, verbose=verbose)
+    _ = report_perf(df, ys,  1, verbose=verbose)
+    _ = report_perf(df, ys, -1, verbose=verbose)
     cr = report_perf(df, ys, None, verbose=verbose)
     # print('Global Profit: %10.2f' % (cr,))
 
@@ -144,15 +144,14 @@ def main(args):
                 is_trn.sum(), is_tst.sum()))
             pipe.fit(df.loc[is_trn, inputs],
                      df.loc[is_trn, output_col])
-            #pipe.print()
+            # print(pipe)
             df.loc[is_trn, 'pred_trn'] = pipe.predict(df.loc[is_trn, inputs])
             df.loc[is_tst, 'pred_tst'] = pipe.predict(df.loc[is_tst, inputs])
 
-        dump_details = model_dcts[0].get('dump_details')
-        if dump_details:
+        if 'dump_details' in model_dcts[0]:
             fn = 'grp_%s' % (tst_desc,)
             dump_tree(pipe.get_model(), inputs, fn=fn,
-                      dir=dump_details, max_depth=4)
+                      dir=model_dcts[0]['dump_details'], max_depth=4)
 
         if args.verbose > 0:
             print('GROUP FIT PERFORMANCE')
@@ -167,8 +166,9 @@ def main(args):
         df['year month day time sym bs raw pred_trn pred_tst'.split()
             ].to_csv(dump_preds, sep=',', header=True, index=True,
                      compression='gzip')
-        ftp.put(dump_preds, out_path='', out_fn='predictions.csv.gz',
-                config=config['ftp'])
+        if 'ftp' in config:
+            ftp.put(dump_preds, out_path='', out_fn='predictions.csv.gz',
+                    config=config['ftp'])
 
 
 if __name__ == '__main__':

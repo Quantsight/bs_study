@@ -20,6 +20,7 @@ pd.set_option('display.max_columns', 28)
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
+
 def report_perf(df_ts, preds, bs, verbose=1):
     # passed preds could be a Series or np.array; we will destructively sort.
     profit = df_ts.raw.values.copy()
@@ -93,8 +94,14 @@ def main(args):
     xtra_names = ['x%02d' % (_,) for _ in range(n_xtra)]
     all_column_names = 'year month day time sym bs_spcfc bs target raw nickpred'.split()\
                        + pi_names + xtra_names
-    sym_inputs = pi_names + xtra_names + 'time bs_spcfc bs'.split()
+    sym_inputs = pi_names + 'bs_spcfc bs'.split()
     grp_inputs = list(sym_inputs) # create a copy
+    if args.input_time:
+        grp_inputs += ['time']
+        sym_inputs += ['time']
+    if args.input_extras:
+        grp_inputs += xtra_names
+        sym_inputs += xtra_names
 
     row_limit = int(args.limit) if args.limit else None
 
@@ -201,8 +208,8 @@ def main(args):
                     (is_trn & is_sym).sum(), (is_tst & is_sym).sum(), sym))
                 sym_model.fit(df.loc[is_trn & is_sym, sym_inputs_trn],
                               df.loc[is_trn & is_sym, output_col])
-                df.loc[is_trn & is_sym, 'sym_pred_trn'] = sym_model.predict(df.loc[is_trn, sym_inputs_trn])
-                df.loc[is_tst & is_sym, 'sym_pred_tst'] = sym_model.predict(df.loc[is_tst, sym_inputs_tst])
+                df.loc[is_trn & is_sym, 'sym_pred_trn'] = sym_model.predict(df.loc[is_trn & is_sym, sym_inputs_trn])
+                df.loc[is_tst & is_sym, 'sym_pred_tst'] = sym_model.predict(df.loc[is_tst & is_sym, sym_inputs_tst])
 
                 if args.dump_sym:
                     fn = 'sym_%s_%s' % (sym, tst_desc)

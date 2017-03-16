@@ -6,7 +6,7 @@ from algs.split_combine_estimator import SplitEstimator
 def from_dict(config):
     klass = config['class']
     model_class = globals()[klass]
-    model = model_class(params=config['params'])
+    model = model_class(params=config.get('params', {}))
     return model
 
 def pipeline_from_dicts(dcts):

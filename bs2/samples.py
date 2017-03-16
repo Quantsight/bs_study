@@ -11,8 +11,9 @@ def main(args):
     n_xtra = 10
     pi_names = ['p%02d' % (_,) for _ in range(n_predictors)]
     xtra_names = ['x%02d' % (_,) for _ in range(n_xtra)]
-    all_column_names = 'year month day time sym bs_spcfc bs target raw nickpred'.split()\
-                       + pi_names + xtra_names
+    all_column_names = 'year month day time sym'.split() + \
+       pi_names + 'bs_spcfc bs'.split() + \
+       xtra_names + 'target raw nickpred'.split()
 
     row_limit = int(args.limit) if args.limit else None
 

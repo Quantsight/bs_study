@@ -1,4 +1,4 @@
-both (all?) wrapped models should implement:
+wrapped models should implement:
     fit()
     transform()
         add new prediction column (fit must be called first)
@@ -6,12 +6,6 @@ both (all?) wrapped models should implement:
     fit_transform()
         add new prediction column
         how to deal with NaN predictions?
-    set/get param_dist()
-        how are params "passed down" (see Pipeline docs)
-        need set() so API can choose a subset of parameters and distributions for each parameter.
-
-do both sym_model and grp_model have separate param_dist{} dicts?
-FeatureUnion and Pipeline can be combined to create complex models.
 
 
 ============================== DATA GENERATION ==============================
