@@ -30,9 +30,15 @@ class RF(ModelBase):
         self._clf = RandomForestRegressor(**self._params)
         #oob_score=False, n_estimators=128,criterion='mse', min_samples_leaf=100, n_jobs=-1)
         self._clf.fit(X, y)
+        self._y_shape = y.shape[0]
         return
 
     def fit_transform(self, X, y):
         self.fit(X, y)
-        ps = self.predict(X).values.reshape(y.shape[0], 1)
+        ps = self.predict(X).values.reshape(self._y_shape, 1)
         return np.concatenate((X, ps), axis=1)
+
+    def transform(self, X):
+        ps = self.predict(X).values.reshape(self._y_shape, 1)
+        return np.concatenate((X, ps), axis=1)
+

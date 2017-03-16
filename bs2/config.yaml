@@ -6,9 +6,8 @@ ftp:
 
 data_setup:
     no_time_series_fit: false
-    trn_n: 3
+    trn_n: 1
     tst_n: 1
-    limit: null
     extra_inputs: [sym,time]
     xN_inputs: true
 
