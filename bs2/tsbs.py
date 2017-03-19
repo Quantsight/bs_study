@@ -100,11 +100,14 @@ def main(args):
     if args.limit:
         df = df.sample(n=args.limit)
 
-    pi_names =   [_ for _ in df.columns if re.match(r'p\d{2}', _)]
-    xtra_names = [_ for _ in df.columns if re.match(r'x\d{2}', _)]
-    inputs = pi_names + xtra_names + 'time bs_spcfc bs'.split()
-
     config = yaml.safe_load(open(args.config_fn))
+    addtnl_inputs = config['data_setup'].get('addtnl_inputs', [])
+    use_extra = config['data_setup'].get('use_extra', False)
+    pi_names = [_ for _ in df.columns if re.match(r'p\d{2}', _)]
+    xtra_names = [_ for _ in df.columns if re.match(r'x\d{2}', _)] if \
+        use_extra else []
+    inputs = pi_names + xtra_names + addtnl_inputs +'bs_spcfc bs'.split()
+
     model_dcts = config['model_pipeline']
     output_col = model_dcts[0]['output_col']
     pipe = pipeline_from_dicts(model_dcts)
