@@ -1,0 +1,14 @@
+data_setup:
+    no_time_series_fit: false
+    trn_n: 3
+    tst_n: 1
+    addtnl_inputs: [sym,time]
+    use_extra: true
+
+model_pipeline:
+    -
+        name: grp_fit
+        output_col: target
+        clf:
+            class: LP
+

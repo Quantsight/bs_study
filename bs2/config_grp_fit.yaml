@@ -8,8 +8,8 @@ data_setup:
     no_time_series_fit: false
     trn_n: 1
     tst_n: 1
-    extra_inputs: [sym,time]
-    xN_inputs: true
+    addtnl_inputs: [sym,time]
+    use_extra: true
 
 model_pipeline:
     -

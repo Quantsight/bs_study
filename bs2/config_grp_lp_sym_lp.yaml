@@ -1,9 +1,3 @@
-ignore_ftp:
-    host: ftp.texasvanbavel.com
-    user: johnp
-    pw: dataminer123!
-    path_root: farsight/
-
 data_setup:
     no_time_series_fit: false
     trn_n: 3
@@ -14,18 +8,16 @@ data_setup:
 model_pipeline:
     -
         name: grp_fit
-        clf: 
-            class: RF
-            params:
-                n_estimators: 64
+        output_col: target
+        clf:
+            class: LP
             fit_params:
                 min_samples_leaf:
                     min: 1
                     max: 1000
                     type: int
-        output_col: target
-        dump_file: grp_preds.txt
-        
+        # dump_file: grp_preds.txt
+
     -
         name: sym_fit
         output_col: target
@@ -43,4 +35,4 @@ model_pipeline:
                             min: 1
                             max: 1000
                             type: int
-        dump_file: sym_preds.txt
+        # dump_file: sym_preds.txt
