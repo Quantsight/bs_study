@@ -33,6 +33,7 @@ class RF(ModelBase):
         self._y_shape = y.shape[0]
         return
 
+    '''
     def fit_transform(self, X, y):
         self.fit(X, y)
         ps = self.predict(X).values.reshape(self._y_shape, 1)
@@ -41,4 +42,4 @@ class RF(ModelBase):
     def transform(self, X):
         ps = self.predict(X).values.reshape(self._y_shape, 1)
         return np.concatenate((X, ps), axis=1)
-
+    '''

@@ -13,20 +13,21 @@ import numpy as np
 import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.pipeline import Pipeline, make_pipeline
 
-class SplitEstimator(BaseEstimator, TransformerMixin):
-    def __init__(self, **params):
-        self._params     = params['params']
-        self.split_on    = self._params['split_on'] # required
-        self.max_buckets = self._params.get('max_buckets', 100) # optional
-        self._n_buckets  = self._params.get('n_buckets', None) # optional
+from model import ModelBase
+
+class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
+    def __init__(self, name, **params):
+        self.name = name
+        self._params      = params['params']
+        self.split_on     = self._params['split_on'] # required
+        self.remove_split = self._params.get('remove_split', True) # optional
+        self.max_buckets  = self._params.get('max_buckets', 100) # optional
+        self._n_buckets   = self._params.get('n_buckets', None) # optional
         self._buckets = None
         self._estimators = None
 
-        clf_params = params['params']['split_clf']  # will be applied to each estimator
-        self.split_clf_class  = clf_params['class']
-        self.split_clf_params = clf_params['params']
+        self.clf_params = params['params']['split_clf']  # will be applied to each estimator
 
 
     def get_params(self, deep=True):
@@ -57,9 +58,11 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
             n_buckets = len(self._buckets)
             assert n_buckets < self.max_buckets, 'TOO MANY BUCKETS: %s' % self._buckets
 
+        # need to do the import here to avoid circular references:
+        from model_from_dict import from_dict
         # construct an estimator for each bucket:
-        self._estimators = {bk:self.split_clf_class(self.split_clf_params) 
-            for bk in self._buckets}
+        self._estimators = {bk: from_dict(self.name+str(bk), self.clf_params)
+                            for bk in self._buckets}
 
         ''' not sure why have explicit call to set_params when can pass to
             constructors (above)
@@ -70,9 +73,12 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
 
         # subset for each bucket value
         for bk in self._estimators.keys():
-            # Here some logic to divide dataset
-            subset = X[self.split_on] == bk
-            self._estimators[bk].fit(X[subset], y[subset])
+            subset = (X[self.split_on] == bk)
+            if self.remove_split:
+                self._estimators[bk].fit(X[subset].drop(self.split_on, 1),
+                                         y[subset])
+            else:
+                self._estimators[bk].fit(X[subset], y[subset])
 
     def predict(self, X, y=None):
         assert self._estimators, 'fit() must be called before predict()'
@@ -81,8 +87,11 @@ class SplitEstimator(BaseEstimator, TransformerMixin):
         ps = pd.Series(index=X.index)
         for bk in self._estimators.keys():
             subset = X[self.split_on] == bk
-            ps[subset] = self._estimators[bk].predict(X[subset])
-        assert np.isnan(ps).any() == False
+            if self.remove_split:
+                ps[subset] = self._estimators[bk].predict(X[subset].drop(self.split_on, 1))
+            else:
+                ps[subset] = self._estimators[bk].predict(X[subset])
+        assert not np.isnan(ps).any()
         return ps
 
     def fit_transform(self, X, y=None):
