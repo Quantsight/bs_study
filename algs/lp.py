@@ -38,14 +38,15 @@ class LP(ModelBase):
         }
         return param_dist
 
-    def fit(self, xs_trn, ys_trn):
+    def fit(self, X, y):
+        self._y_shape = y.shape[0]
         self._params['fit_intercept'] = self._params.get('fit_intercept', False)
         self._params['n_jobs'] = self._params.get('n_jobs', -1)
         self._params['normalize'] = self._params.get('normalize', False)
         self._clf = LinearRegression(**self._params)
-        stdx = xs_trn.std(axis=0)
+        stdx = X.std(axis=0)
         stdx.replace(0, 1, inplace=True)
-        xs_norm = xs_trn / stdx
-        self._clf.fit(xs_norm, ys_trn)
+        xs_norm = X / stdx
+        self._clf.fit(xs_norm, y)
         self._clf.coef_ /= stdx
         return

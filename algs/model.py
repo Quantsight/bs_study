@@ -1,7 +1,10 @@
 from __future__ import print_function
 
+import numpy as np
+
 class ModelBase(object):
-    def __init__(self, params={}):
+    def __init__(self, name, params={}):
+        self.name = name
         self._clf = None
         self._params = params
 
@@ -18,12 +21,20 @@ class ModelBase(object):
 
     def fit_transform(self, X, y):
         self.fit(X, y)
-        ps = self.predict(X).values.reshape(self._y_shape, 1)
-        return np.concatenate((X, ps), axis=1)
+        ps = self.predict(X)
+        assert self.name not in X.columns
+        # return np.concatenate((X, ps), axis=1)
+        X[self.name] = ps  # MODIFYING THE PASSED-IN X!!
+        return X
 
     def transform(self, X):
-        ps = self.predict(X).values.reshape(self._y_shape, 1)
-        return np.concatenate((X, ps), axis=1)
+        ps = self.predict(X)
+        # dual purpose of ensuring X follows Dataframe interface,
+        # as well as doesn't already have a column called <self.name>
+        assert self.name not in X.columns
+        # return np.concatenate((X, ps), axis=1)
+        X[self.name] = ps  # MODIFYING THE PASSED-IN X!!
+        return X
 
     def predict(self, xs):
         return self._clf.predict(X=xs)
