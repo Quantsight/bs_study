@@ -85,8 +85,8 @@ if __name__ == '__main__':
     X, y = td.generate_test_data()
 
     import yaml
-    config_fn = '/home/John/Quantera/bs_study/algs/model_test.yaml'
-    #config_fn = '/mnt/c/Users/John/qta/config.yaml'
+    #config_fn = '/home/John/Quantera/bs_study/algs/model_test.yaml'
+    config_fn = 'model_test.yaml'
     model_configs = yaml.safe_load(open(config_fn))['model_pipeline']
     for model_config in model_configs:
         model = from_dict(model_config)
