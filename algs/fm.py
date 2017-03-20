@@ -9,9 +9,9 @@ from tffm import TFFMRegressor
 from model import ModelBase
 
 class FM(ModelBase):
-    def get_param_dist(self, xs):
-        num_rows = xs.shape[0]
-        num_features = xs.shape[1]
+    def get_param_dist(self, X):
+        num_rows = X.shape[0]
+        num_features = X[self.inputs].shape[1]
         param_dist = {
             'rank': sp_randint(1, num_features),
             'batch_size': sp_randint(1, num_rows),
@@ -19,10 +19,10 @@ class FM(ModelBase):
         }
         return param_dist
 
-    def fit(self, xs_trn, ys_trn, order=2, rank=10, lr=0.001, n_epochs=1,
+    def fit(self, X, y, order=2, rank=10, lr=0.001, n_epochs=1,
         batch_size=100, std=0.001, lda=1e-6, log_dir='/tmp/jprior/logs',
             verbosity=0):
-        self._clf = TFFMRegressor(**self._params)
+        self._clf = TFFMRegressor(**self._clf_params)
         '''
             seed=0,
             order=order,
@@ -39,5 +39,5 @@ class FM(ModelBase):
         )
         '''
         # tffm doesn't deal with DataFrames correctly (although it tries...)
-        self._clf.fit(xs_trn.values, ys_trn.values, show_progress=True)
+        self._clf.fit(X[self.inputs].values, y.values, show_progress=True)
         return

@@ -14,11 +14,11 @@ data_setup:
 model_pipeline:
     -
         name: grp_fit
-        clf: 
-            class: RF
-            params:
+        klass: 
+            klass: RF
+            clf_params:
                 n_estimators: 64
-            fit_params:
+            cv_params:
                 min_samples_leaf:
                     min: 1
                     max: 1000
@@ -29,16 +29,16 @@ model_pipeline:
     -
         name: sym_fit
         output_col: target
-        clf:
-            class: SplitEstimator
-            params:
+        klass:
+            klass: SplitEstimator
+            clf_params:
                 # 'split_on' is an argument to SplitEstimator.__init__()
                 split_on: sym
-                # 'split_clf' is an argument to SplitEstimator.__init__()
+                # 'split_model' is an argument to SplitEstimator.__init__()
                 # does each model split optimize its own params? (sym='ABC' gets different params than sym='DEF'?)
-                split_clf:
-                    class: LP
-                    fit_params:
+                split_model:
+                    klass: LP
+                    cv_params:
                         min_samples_leaf:
                             min: 1
                             max: 1000

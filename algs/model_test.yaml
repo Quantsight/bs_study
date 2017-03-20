@@ -9,9 +9,10 @@ model_pipeline:
     -
         name: grp_fit
         output_col: target
-        klass: LP
+        klass_module: algs.lp
+        klass_class: LP
         params:
-            inputs: 'p00 p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 p14 p15 p16 p17 p18 x00 x01 x02 x03 x04 x05 x06 x07 x08 x09 sym time bs_spcfc bs'
+            inputs: 'A B C D'
             cv_params:
                 min_samples_leaf:
                     min: 1
@@ -22,19 +23,24 @@ model_pipeline:
     -
         name: sym_fit
         output_col: target
-        klass: SplitEstimator
+        klass_module: algs.split_combine_estimator
+        klass_class: SplitEstimator
         params:
-            inputs: 'p00 p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 p14 p15 p16 p17 p18 x00 x01 x02 x03 x04 x05 x06 x07 x08 x09 sym time bs_spcfc bs grp_fit'
+            inputs: 'A B C D'
             clf_params:
                 # 'split_on' is an argument to SplitEstimator.__init__()
-                split_on: sym
+                split_on: S
                 # 'split_model' is an argument to SplitEstimator.__init__()
                 # does each model split optimize its own params? (sym='ABC' gets different params than sym='DEF'?)
                 split_model:
-                    klass: LP
-                    cv_params:
-                        min_samples_leaf:
-                            min: 1
-                            max: 1000
-                            type: int
+                    name: ss
+                    klass_module: algs.lp
+                    klass_class: LP
+                    params:
+                        inputs: 'A B C D'
+                        cv_params:
+                            min_samples_leaf:
+                                min: 1
+                                max: 1000
+                                type: int
         # dump_file: sym_preds.txt

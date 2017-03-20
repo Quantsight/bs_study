@@ -9,6 +9,6 @@ model_pipeline:
     -
         name: grp_fit
         output_col: target
-        clf:
-            class: LP
+        klass:
+            klass: LP
 

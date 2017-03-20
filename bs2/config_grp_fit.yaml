@@ -14,11 +14,11 @@ data_setup:
 model_pipeline:
     -
         name: grp_fit
-        clf: 
-            class: RF
-            params:
+        klass: 
+            klass: RF
+            clf_params:
                 n_estimators: 64
-            fit_params:
+            cv_params:
                 min_samples_leaf:
                     min: 1
                     max: 1000

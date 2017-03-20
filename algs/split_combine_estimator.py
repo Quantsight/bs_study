@@ -14,24 +14,25 @@ import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from model import ModelBase
+from model import ModelBase, from_dict
 
 class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
     def __init__(self, name, **params):
         self.name = name
-        self._params      = params['params']
-        self.split_on     = self._params['split_on'] # required
-        self.remove_split = self._params.get('remove_split', True) # optional
-        self.max_buckets  = self._params.get('max_buckets', 100) # optional
-        self._n_buckets   = self._params.get('n_buckets', None) # optional
+        self.inputs = params['inputs'].split()
+        self._clf_params  = params['clf_params']
+        self.split_on     = self._clf_params['split_on'] # required
+        self.remove_split = self._clf_params.get('remove_split', True) # optional
+        self.max_buckets  = self._clf_params.get('max_buckets', 100) # optional
+        self._n_buckets   = self._clf_params.get('n_buckets', None) # optional
         self._buckets = None
         self._estimators = None
 
-        self.clf_params = params['params']['split_clf']  # will be applied to each estimator
+        self.split_model_params = params['clf_params']['split_model']  # will be applied to each estimator
 
 
     def get_params(self, deep=True):
-        return self._params.copy()
+        return self._clf_params.copy()
 
     def set_params(self, **params):
         """
@@ -41,7 +42,7 @@ class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
         :param params: dict
         :return: self
         """
-        self._params = params.copy()
+        self._clf_params = params.copy()
         return self
 
     def fit(self, X, y=None):
@@ -59,23 +60,23 @@ class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
             assert n_buckets < self.max_buckets, 'TOO MANY BUCKETS: %s' % self._buckets
 
         # need to do the import here to avoid circular references:
-        from model_from_dict import from_dict
         # construct an estimator for each bucket:
-        self._estimators = {bk: from_dict(self.name+str(bk), self.clf_params)
+        self._estimators = {bk: from_dict(self.split_model_params)
                             for bk in self._buckets}
 
         ''' not sure why have explicit call to set_params when can pass to
             constructors (above)
-        if self.clf_params:
+        if self.split_model_params:
             for clf in self._estimators.values():
-                clf.set_params(self.clf_params) # inplace?
+                clf.set_params(self.split_model_params) # inplace?
         '''
 
         # subset for each bucket value
         for bk in self._estimators.keys():
             subset = (X[self.split_on] == bk)
             if self.remove_split:
-                self._estimators[bk].fit(X[subset].drop(self.split_on, 1),
+                inputs = [_ for _ in self.inputs if _ != self.split_on]
+                self._estimators[bk].fit(X.loc[subset, inputs],
                                          y[subset])
             else:
                 self._estimators[bk].fit(X[subset], y[subset])
@@ -86,21 +87,14 @@ class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
         # TODO: align predictions for subsets of elements of y
         ps = pd.Series(index=X.index)
         for bk in self._estimators.keys():
+            inputs = self.inputs - self.split_on
             subset = X[self.split_on] == bk
             if self.remove_split:
-                ps[subset] = self._estimators[bk].predict(X[subset].drop(self.split_on, 1))
+                ps[subset] = self._estimators[bk].predict(X.loc[subset, inputs])
             else:
                 ps[subset] = self._estimators[bk].predict(X[subset])
         assert not np.isnan(ps).any()
         return ps
-
-    def fit_transform(self, X, y=None):
-        """
-        fit() -> transform() -> ... add/remove columns to X
-        """
-        self.fit(X, y)
-        ps = self.predict(X).values.reshape(y.shape[0], 1)
-        return np.concatenate((X, ps), axis=1)
 
 if __name__ == '__main__':
     X, y = generate_test_data()

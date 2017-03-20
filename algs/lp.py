@@ -23,8 +23,8 @@ linear_model.RidgeClassifierCV([alphas, ...])	Ridge classifier with built-in cro
 """
 
 class LP(ModelBase):
-    def get_param_dist(self, xs):
-        total_features = xs.shape[1]
+    def get_param_dist(self, X):
+        total_features = len(self.inputs)
         min_features = int(max(1, 0.10 * total_features))
         max_features = int(max(1, 0.70 * total_features))
         feature_step = int(round((max_features - min_features) / 10, 0))
@@ -39,14 +39,13 @@ class LP(ModelBase):
         return param_dist
 
     def fit(self, X, y):
-        self._y_shape = y.shape[0]
-        self._params['fit_intercept'] = self._params.get('fit_intercept', False)
-        self._params['n_jobs'] = self._params.get('n_jobs', -1)
-        self._params['normalize'] = self._params.get('normalize', False)
-        self._clf = LinearRegression(**self._params)
-        stdx = X.std(axis=0)
+        self._clf_params['fit_intercept'] = self._clf_params.get('fit_intercept', False)
+        self._clf_params['n_jobs'] = self._clf_params.get('n_jobs', -1)
+        self._clf_params['normalize'] = self._clf_params.get('normalize', False)
+        self._clf = LinearRegression(**self._clf_params)
+        stdx = X[self.inputs].std(axis=0)
         stdx.replace(0, 1, inplace=True)
-        xs_norm = X / stdx
+        xs_norm = X[self.inputs] / stdx
         self._clf.fit(xs_norm, y)
         self._clf.coef_ /= stdx
         return

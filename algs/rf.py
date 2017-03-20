@@ -27,19 +27,8 @@ class RF(ModelBase):
         return param_dist
 
     def fit(self, X, y):
-        self._clf = RandomForestRegressor(**self._params)
+        self._clf = RandomForestRegressor(**self._clf_params)
         #oob_score=False, n_estimators=128,criterion='mse', min_samples_leaf=100, n_jobs=-1)
-        self._clf.fit(X, y)
-        self._y_shape = y.shape[0]
+        self._clf.fit(X[self.inputs], y)
         return
 
-    '''
-    def fit_transform(self, X, y):
-        self.fit(X, y)
-        ps = self.predict(X).values.reshape(self._y_shape, 1)
-        return np.concatenate((X, ps), axis=1)
-
-    def transform(self, X):
-        ps = self.predict(X).values.reshape(self._y_shape, 1)
-        return np.concatenate((X, ps), axis=1)
-    '''
