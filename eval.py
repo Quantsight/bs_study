@@ -136,7 +136,7 @@ def main(args):
     if row_limit:
         df = df.sample(n=row_limit)
 
-    if args.noncv_fit:
+    if args.no_time_series_fit:
         ''' GLOBAL FIT; no time-series '''
         lp = LP()
         lp.fit(df[sym_inputs], df[output_col])
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     parser.add_argument('--limit', type=float)
     parser.add_argument('--sym', type=int)
     parser.add_argument('--verbose', type=int, default=1)
-    parser.add_argument('--noncv_fit', type=int, default=0)
+    parser.add_argument('--no_time_series_fit', type=int, default=0)
     parser.add_argument('--grp_fit')
     parser.add_argument('--sym_fit')
     parser.add_argument('--dump_grp')
