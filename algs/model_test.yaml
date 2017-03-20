@@ -2,7 +2,7 @@ data_setup:
     no_time_series_fit: false
     trn_n: 3
     tst_n: 1
-    addtnl_inputs: [sym time]
+    addtnl_inputs: [sym, time]
     use_extra: true
 
 model_pipeline:
@@ -32,15 +32,14 @@ model_pipeline:
                 split_on: S
                 # 'split_model' is an argument to SplitEstimator.__init__()
                 # does each model split optimize its own params? (sym='ABC' gets different params than sym='DEF'?)
-                split_model:
-                    name: ss
-                    klass_module: algs.lp
-                    klass_class: LP
-                    params:
-                        inputs: 'A B C D'
-                        cv_params:
-                            min_samples_leaf:
-                                min: 1
-                                max: 1000
-                                type: int
+                name: ss
+                klass_module: algs.lp
+                klass_class: LP
+                params:
+                    inputs: 'A B C D'
+                    cv_params:
+                        min_samples_leaf:
+                            min: 1
+                            max: 1000
+                            type: int
         # dump_file: sym_preds.txt

@@ -19,16 +19,15 @@ from model import ModelBase, from_dict
 class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
     def __init__(self, name, **params):
         self.name = name
-        self.inputs = params['inputs'].split()
         self._clf_params  = params['clf_params']
         self.split_on     = self._clf_params['split_on'] # required
-        self.remove_split = self._clf_params.get('remove_split', True) # optional
         self.max_buckets  = self._clf_params.get('max_buckets', 100) # optional
         self._n_buckets   = self._clf_params.get('n_buckets', None) # optional
         self._buckets = None
         self._estimators = None
 
-        self.split_model_params = params['clf_params']['split_model']  # will be applied to each estimator
+        self.split_model_params = params['clf_params']
+        # will be applied to each estimator
 
 
     def get_params(self, deep=True):
@@ -74,12 +73,7 @@ class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
         # subset for each bucket value
         for bk in self._estimators.keys():
             subset = (X[self.split_on] == bk)
-            if self.remove_split:
-                inputs = [_ for _ in self.inputs if _ != self.split_on]
-                self._estimators[bk].fit(X.loc[subset, inputs],
-                                         y[subset])
-            else:
-                self._estimators[bk].fit(X[subset], y[subset])
+            self._estimators[bk].fit(X[subset], y[subset])
 
     def predict(self, X, y=None):
         assert self._estimators, 'fit() must be called before predict()'
@@ -87,12 +81,8 @@ class SplitEstimator(BaseEstimator, TransformerMixin, ModelBase):
         # TODO: align predictions for subsets of elements of y
         ps = pd.Series(index=X.index)
         for bk in self._estimators.keys():
-            inputs = self.inputs - self.split_on
             subset = X[self.split_on] == bk
-            if self.remove_split:
-                ps[subset] = self._estimators[bk].predict(X.loc[subset, inputs])
-            else:
-                ps[subset] = self._estimators[bk].predict(X[subset])
+            ps[subset] = self._estimators[bk].predict(X[subset])
         assert not np.isnan(ps).any()
         return ps
 

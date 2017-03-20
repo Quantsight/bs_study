@@ -14,9 +14,8 @@ class ModelBase(object):
 
         '''
         assert name is not None
-        assert inputs is not None
         self.name = name
-        self.inputs = inputs.split()
+        self.inputs = inputs
         self._clf_params = clf_params
         # fit_params ?
         # inputs ?
@@ -74,7 +73,7 @@ def from_dict(model_params_dct):
 
 def pipeline_from_dicts(model_params_dcts):
     # kinda weird, both the pipeline and Model itself store model names.
-    models = [(m['name'], from_dict(**m)) for m in model_params_dcts]
+    models = [(m['name'], from_dict(m)) for m in model_params_dcts]
     from sklearn.pipeline import Pipeline
     pipe = Pipeline(models)
     return pipe
