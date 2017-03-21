@@ -12,7 +12,7 @@ model_pipeline:
         klass_module: algs.lp
         klass_class: LP
         params:
-            inputs: 'A B C D'
+            inputs: [A,B,C,D]
             cv_params:
                 min_samples_leaf:
                     min: 1
@@ -26,7 +26,6 @@ model_pipeline:
         klass_module: algs.split_combine_estimator
         klass_class: SplitEstimator
         params:
-            inputs: 'A B C D'
             clf_params:
                 # 'split_on' is an argument to SplitEstimator.__init__()
                 split_on: S
@@ -36,7 +35,7 @@ model_pipeline:
                 klass_module: algs.lp
                 klass_class: LP
                 params:
-                    inputs: 'A B C D'
+                    inputs: [A,B,C,D]
                     cv_params:
                         min_samples_leaf:
                             min: 1
