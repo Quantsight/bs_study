@@ -1,11 +1,11 @@
-wrapped models should implement:
-    fit()
-    transform()
-        add new prediction column (fit must be called first)
-        how to deal with NaN predictions?
-    fit_transform()
-        add new prediction column
-        how to deal with NaN predictions?
+time-series CV is slightly different in that I'm not choosing the best 
+parameters encountered on the training set to TRAIN on the test set.
+
+I'm choosing the best parameters from all training sets, where "best" is 
+measured on the performance of using those parameters on all test sets.
+
+So the CV code needs to be "blocked" from fitting on the test set; needs to use
+the models fitted on the training sets.
 
 
 ============================== DATA GENERATION ==============================

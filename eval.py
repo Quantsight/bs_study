@@ -253,7 +253,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_file')
     parser.add_argument('--in_csv')
-    parser.add_argument('--resultst_file',
+    parser.add_argument('--results_file',
                         default='/home/John/Scratch/quantera/results.txt')
     parser.add_argument('--ftp_config', default='config.ini')
     parser.add_argument('--trn_n', type=int, default=3)
