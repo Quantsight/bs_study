@@ -23,29 +23,30 @@ linear_model.RidgeClassifierCV([alphas, ...])	Ridge classifier with built-in cro
 """
 
 class LP(ModelBase):
+    def __init__(self, name, inputs=None, cv_params={},
+        fit_intercept=False, normalize=False, n_jobs=-1):
+        ModelBase.__init__(self, name, inputs=inputs, cv_params=cv_params)
+        self.fit_intercept = fit_intercept
+        self.normalize     = normalize
+        self.n_jobs        = n_jobs
+
+    ''' this is handled by cv_params (in the .yaml files)
     def get_param_dist(self, X):
-        total_features = len(self.inputs)
-        min_features = int(max(1, 0.10 * total_features))
-        max_features = int(max(1, 0.70 * total_features))
-        feature_step = int(round((max_features - min_features) / 10, 0))
         param_dist = {
-            'max_features': range(min_features, max_features, feature_step),
-            'min_samples_leaf': range(1, 1000, 50)
-            # "max_features": sp_randint(min_features, max_features),
-            # "min_samples_leaf": sp_randint(1, 1000),
-            # "learning_rate": sp_uniform(loc=0.01, scale=0.19),
-            # "subsample": sp_uniform(loc=0.01, scale=0.89)
+            'fit_intercept':[True, False],
+            'normalize':[True, False],
         }
         return param_dist
+    '''
 
-    def fit(self, X, y):
-        self._clf_params['fit_intercept'] = self._clf_params.get('fit_intercept', False)
-        self._clf_params['n_jobs'] = self._clf_params.get('n_jobs', -1)
-        self._clf_params['normalize'] = self._clf_params.get('normalize', False)
-        self._clf = LinearRegression(**self._clf_params)
+    def fit(self, X, y, verbosity=0):
+        self._clf = LinearRegression(fit_intercept=self.fit_intercept, normalize=
+            self.normalize, n_jobs=self.n_jobs)
         stdx = X[self.inputs].std(axis=0)
         stdx.replace(0, 1, inplace=True)
         xs_norm = X[self.inputs] / stdx
         self._clf.fit(xs_norm, y)
         self._clf.coef_ /= stdx
+        if verbosity > 0:
+            print('MSE: %8.2f' % ((y - self._clf.predict(X[self.inputs])) ** 2).mean(),)
         return

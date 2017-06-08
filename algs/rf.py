@@ -11,6 +11,14 @@ print('\t%7.3f' % (mse,))
 """
 
 class RF(ModelBase):
+    def __init__(self, name, inputs=None, cv_params={},
+        min_samples_leaf=20, n_estimators=64, n_jobs=-1):
+        ModelBase.__init__(self, name, inputs=inputs, cv_params=cv_params)
+        self.min_samples_leaf = min_samples_leaf
+        self.n_estimators     = n_estimators
+        self.n_jobs        = n_jobs
+
+    ''' use cv_params instead
     def get_param_dist(self, xs):
         total_features = xs.shape[1]
         min_features = int(max(1, 0.10 * total_features))
@@ -25,9 +33,10 @@ class RF(ModelBase):
             # "subsample": sp_uniform(loc=0.01, scale=0.89)
         }
         return param_dist
+    '''
 
     def fit(self, X, y):
-        self._clf = RandomForestRegressor(**self._clf_params)
+        self._clf = RandomForestRegressor(**self._sub_params)
         #oob_score=False, n_estimators=128,criterion='mse', min_samples_leaf=100, n_jobs=-1)
         self._clf.fit(X[self.inputs], y)
         return

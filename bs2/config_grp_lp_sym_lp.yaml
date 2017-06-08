@@ -5,6 +5,9 @@ data_setup:
     addtnl_inputs: [sym, time]
     use_extra: true
 
+cv:
+    perf_fn: /cygdrive/c/Users/John/Documents/Scratch/qta/perf
+
 model_pipeline:
     -
         name: grp_fit
@@ -14,10 +17,8 @@ model_pipeline:
         params:
             inputs: [p00,p01,p02,p03,p04,p05,p06,p07,p08,p09,p10,p11,p12,p13,p14,p15,p16,p17,p18,x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,time,bs_spcfc,bs]
             cv_params:
-                min_samples_leaf:
-                    min: 1
-                    max: 1000
-                    type: int
+                fit_intercept: [True, False]
+                normalize: [True, False]
         # dump_file: grp_preds.txt
 
     -
@@ -26,16 +27,15 @@ model_pipeline:
         klass_module: algs.split_combine_estimator
         klass_class: SplitEstimator
         params:
-            clf_params:
-                split_on: sym
+            split_on: sym
+            sub_params:
                 name: ss
                 klass_module: algs.lp
                 klass_class: LP
                 params:
+                    fit_intercept: False
                     inputs: [p00,p01,p02,p03,p04,p05,p06,p07,p08,p09,p10,p11,p12,p13,p14,p15,p16,p17,p18,x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,time,bs_spcfc,bs,grp_fit]
                     cv_params:
-                        min_samples_leaf:
-                            min: 1
-                            max: 1000
-                            type: int
+                        fit_intercept: [True, False]
+                        normalize: [True, False]
         # dump_file: sym_preds.txt

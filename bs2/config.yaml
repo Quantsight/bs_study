@@ -16,7 +16,7 @@ model_pipeline:
         name: grp_fit
         klass: 
             klass: RF
-            clf_params:
+            sub_params:
                 n_estimators: 64
             cv_params:
                 min_samples_leaf:
@@ -31,7 +31,7 @@ model_pipeline:
         output_col: target
         klass:
             klass: SplitEstimator
-            clf_params:
+            sub_params:
                 # 'split_on' is an argument to SplitEstimator.__init__()
                 split_on: sym
                 # 'split_model' is an argument to SplitEstimator.__init__()

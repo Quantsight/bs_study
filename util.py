@@ -5,17 +5,25 @@ import datetime
 import sys
 
 @contextlib.contextmanager
-def timed_execution(descr, end='\n', strm=sys.stderr):
+def timed_execution(descr, end=None, n=None, strm=sys.stderr):
     start = datetime.datetime.now()
-    print('%s %s ' % (start.strftime("%Y-%m-%d %H:%M"), descr, ), end="",
-          file=strm)
+    if end is None:
+        print('%s ' % (descr, ))
+    else:
+        print('%s ' % (descr, ), end=end)
     strm.flush()
     yield
     td = datetime.datetime.now() - start
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     hms = '%02d:%02d:%02d' % (hours, minutes, seconds)
-    print(hms, end=end, file=strm)
+    if n and td.seconds > 0:
+        rate = n / float(td.seconds)
+        hms += '%10d %8.2f/s' % (int(n), rate,)
+    if end is None:
+        print(hms)
+    else:
+        print(hms,end=end)
     strm.flush()
 
 

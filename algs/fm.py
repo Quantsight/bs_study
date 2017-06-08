@@ -22,7 +22,7 @@ class FM(ModelBase):
     def fit(self, X, y, order=2, rank=10, lr=0.001, n_epochs=1,
         batch_size=100, std=0.001, lda=1e-6, log_dir='/tmp/jprior/logs',
             verbosity=0):
-        self._clf = TFFMRegressor(**self._clf_params)
+        self._clf = TFFMRegressor(**self._sub_params)
         '''
             seed=0,
             order=order,

@@ -1,3 +1,12 @@
+rem_ftp:
+    host: ftp.texasvanbavel.com
+    user: johnp
+    pw: dataminer123!
+    path_root: farsight/
+
+cv:
+    perf_fn: /cygdrive/c/Users/John/Documents/Scratch/qta/perf
+
 data_setup:
     no_time_series_fit: false
     trn_n: 3
@@ -9,6 +18,12 @@ model_pipeline:
     -
         name: grp_fit
         output_col: target
-        klass:
-            klass: LP
-
+        klass_class: LP
+        klass_module: algs.lp
+        params:
+            inputs: [p00,p01,p02,p03,p04,p05,p06,p07,p08,p09,p10,p11,p12,p13,p14,p15,p16,p17,p18,x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,time,bs_spcfc,bs]
+            cv_params:
+                fit_intercept: [True, False]
+                normalize: [True, False]
+        dump_preds: grp_preds.txt
+        

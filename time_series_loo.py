@@ -50,6 +50,29 @@ class TimeSeriesLOO:
             ts_beg_i = jj
 
 
+from sklearn.utils import indexable
+from sklearn.utils.validation import _num_samples
+from sklearn.model_selection import BaseCrossValidator
+class NearestOrPreviousLeaveOneOut(BaseCrossValidator):
+    def __init__(self, trn_n, tst_n, periods):
+        self.trn_n = trn_n
+        self.tst_n = tst_n
+        self.loo = TimeSeriesLOO(periods, self.trn_n, self.tst_n)
+
+    def split(self, X, y=None, groups=None):
+        X, y, groups = indexable(X, y, groups)
+        indices = np.arange(_num_samples(X))
+        for trn_periods, tst_periods in self.loo():
+            train_mask  = groups.isin(trn_periods)
+            test_mask   = groups.isin(tst_periods)
+            train_idxs = indices[train_mask]
+            test_idxs  = indices[test_mask]
+            yield train_idxs, test_idxs
+
+    def get_n_splits(self, X, y=None, groups=None):
+        return len(groups.unique())
+
+
 if __name__ == '__main__':
     import argparse
     import sys
@@ -63,6 +86,16 @@ if __name__ == '__main__':
     periods = pd.to_datetime(periods, format='%Y%m%d%H')
     tr_n = args.tr_n
     ts_n = args.ts_n
+
+    nop_cv = NearestOrPreviousLeaveOneOut(tr_n, ts_n, periods)
+    n_splits = 0
+    for train_idxs, test_idxs in nop_cv.split(periods, y=None, groups=periods):
+        print [pd.to_datetime(_).strftime('%Y.%m.%d') for _ in periods[train_idxs]],
+        print [pd.to_datetime(_).strftime('%Y.%m.%d') for _ in periods[test_idxs]]
+        n_splits += 1
+
+    assert nop_cv.get_n_splits(X=None, y=None, groups=periods) == n_splits
+
     cv = TimeSeriesLOO(periods, tr_n=tr_n, ts_n=ts_n)
     for tr_periods, ts_periods in cv():
         assert len(tr_periods) == tr_n

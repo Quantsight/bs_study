@@ -2,27 +2,74 @@ from __future__ import print_function
 
 import numpy as np
 
-class ModelBase(object):
-    def __init__(self, name=None, inputs=None, inputs_exclude_flag=False, clf_params={}, cv_params={}):
+from sklearn.metrics import make_scorer
+from sklearn.base import BaseEstimator
+from scipy.stats import uniform as sp_uniform
+from scipy.stats import randint as sp_randint
+
+class ModelBase(BaseEstimator):
+    def __init__(self, name, sub_params={}, inputs=None,  
+        cv_params={}, scorer=None):
         ''' 
         name: string with name of the instance
         clf: sklearn Estimator class to use
         inputs: string storing comma-separated list of names
-        clf_params:
+        sub_params: COULD BE EMPTY if using defaults (e.g. LP)
         cv_params:
-        inputs_exclude_flag: if true, then <inputs> is list to _exclude_
 
         '''
-        assert name is not None
         self.name = name
         self.inputs = inputs
-        self._clf_params = clf_params
-        # fit_params ?
-        # inputs ?
-        # inputs_exclude_flag ?
+        self._sub_params = sub_params
+        self._clf_score = scorer
+        self._cv_params = cv_params
+        # input_pattern
 
     def get_param_dist(self, xs):
-        return {}
+        param_dist = {}
+        for k,v in self._cv_params.items():
+            if isinstance(v, (list, tuple)) and not isinstance(v, basestring):
+                vtype = list
+            else:
+                vtype = eval(v['type'])
+            assert vtype in [int, float, list]
+            if vtype == int:
+                param_dist[k] = sp_randint(v['min'], v['max'])
+            elif vtype == float:
+                param_dist[k] = sp_uniform(v['min'], v['max'])
+            elif vtype == list:
+                param_dist[k] = v
+        assert param_dist, 'No cv_params passed by cv attempted.'
+        return param_dist
+
+    '''
+    def get_params(self, deep=True):
+        """Get parameters for this estimator.
+            Parameters
+            ----------
+            deep : boolean, optional
+                If True, will return the parameters for this estimator and
+                contained subobjects that are estimators.
+            Returns
+            -------
+            params : mapping of string to any
+                Parameter names mapped to their values.
+        """
+        return {'name': self.name, 'inputs':self.inputs, 
+                'sub_params':sub_params, 'cv_params': cv_params,
+                'scorer':scorer}
+
+    def set_params(self, **params):
+        """
+        TODO: PASS THROUGH parameters to every estimator
+            - what if fit() hasn't been called?
+            - what if fit() HAS been called?
+        :param params: dict
+        :return: self
+        """
+        self._sub_params = params.copy()
+        return self
+    '''
 
     def _filter_inputs(self, X):
         ''' preprocess data (filter input columns) '''
@@ -50,14 +97,20 @@ class ModelBase(object):
     def predict(self, X):
         return self._clf.predict(X[self.inputs])
 
-    def score(self, ):
-        pass
+    def score(self, y, y_pred, **kwargs):
+        if self._clf_score:
+            self._clf_score(y, y_pred, kwargs)
+        else:
+            return self._clf.score(y, y_pred, kwargs)
 
     def print(self):
         print(self._clf)
 
 
 def from_dict(model_params_dct):
+    ''' there are 3 top-level attributes required:
+        [klass_module, klass_class, params]
+    '''
     import sys
 
     import algs.lp

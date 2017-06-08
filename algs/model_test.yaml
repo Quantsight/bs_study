@@ -26,7 +26,7 @@ model_pipeline:
         klass_module: algs.split_combine_estimator
         klass_class: SplitEstimator
         params:
-            clf_params:
+            sub_params:
                 # 'split_on' is an argument to SplitEstimator.__init__()
                 split_on: S
                 # 'split_model' is an argument to SplitEstimator.__init__()

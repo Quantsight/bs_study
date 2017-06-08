@@ -12,7 +12,7 @@ np.set_printoptions(linewidth = 190, threshold = 100000,
 import pandas as pd
 pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
 pd.set_option('display.max_rows', 500)
-pd.set_option('precision', 5)
+pd.set_option('precision', 2)
 
 from scipy.stats import uniform as sp_uniform
 from scipy.stats import randint as sp_randint
@@ -43,12 +43,12 @@ def cross_validate(clf, X, y=None, param_dist=None, n_iter=10,
     def report(random_search, n_top=N_TOP):
         df = pd.DataFrame(random_search.cv_results_)
         # use worst case 1/3 of distribution to judge cross validation results 
-        df['dist'] = df.mean_test_score + df.std_test_score
+        df['dist'] = df.mean_test_score - df.std_test_score
         df.sort_values('mean_test_score', ascending=True, inplace=True)
         print(df[['rank_test_score', 'mean_test_score',
                   'std_test_score', 'dist', 'params']])
-        df[['rank_test_score', 'mean_test_score',
-                  'std_test_score', 'dist', 'params']].to_csv(results_file)
+        #df[['rank_test_score', 'mean_test_score', 'std_test_score', 'dist', 'params']].to_csv(results_file)
+        df.to_csv(results_file)
         return df.iloc[0]
 
     # run randomized search; use n_jobs=1 because each model-fit will use all CPUs
