@@ -6,13 +6,13 @@ rem_ftp:
 
 data_setup:
     no_time_series_fit: false
-    trn_n: 1
+    trn_n: 3
     tst_n: 1
     addtnl_inputs: [sym,time]
     use_extra: true
 
 cv:
-    perf_fn: /cygdrive/c/Users/John/Documents/Scratch/qta/perf
+    perf_fn: /home/jprior/Scratch/qta_perf/perf_grp_rf.csv
 
 model_pipeline:
     -

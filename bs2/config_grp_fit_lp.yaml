@@ -4,15 +4,15 @@ rem_ftp:
     pw: dataminer123!
     path_root: farsight/
 
-cv:
-    perf_fn: /cygdrive/c/Users/John/Documents/Scratch/qta/perf
-
 data_setup:
     no_time_series_fit: false
     trn_n: 3
     tst_n: 1
     addtnl_inputs: [sym,time]
     use_extra: true
+
+cv:
+    perf_fn: /home/jprior/Scratch/qta_perf/perf_grp_lin.csv
 
 model_pipeline:
     -

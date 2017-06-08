@@ -35,7 +35,7 @@ def thres_cum(y_true, y_pred, verbose=1, asc=False):
     if verbose > 0:
         print('%8d  %8d (%3.0f%%) t:%6.2f  $%8.0f  $%2.2f/trade' % (
             len(y_true), i_max, pct_taken, 
-            data.iloc[i_max].y_pred, cumraw, cumraw/len(data)))
+            data.iloc[i_max].y_pred, cumraw, cumraw/i_max))
     return cumraw
 
 
@@ -85,6 +85,7 @@ def report_all_perf(df, ys, verbose=1):
         print('ys / SYM_PRED      SRC: %8.5f' % (src,))
     '''
 
+
 def foo(clf, X, y, trn_n, tst_n, periods, tests, perf_fn, folds=3, verbose=0):
     from sklearn.metrics import make_scorer
     scorer = make_scorer(thres_cum, greater_is_better=True)
@@ -92,7 +93,7 @@ def foo(clf, X, y, trn_n, tst_n, periods, tests, perf_fn, folds=3, verbose=0):
     from time_series_loo import NearestOrPreviousLeaveOneOut
     nop_cv = NearestOrPreviousLeaveOneOut(trn_n, tst_n, periods)
 
-    # some parameters aren't optimizable (and therefore some clf's have no optimizable parameters)
+    # some parameters aren't optimizable (therefore some clf's have no optimizable parameters)
     param_dist = {}
     for name, step in clf.named_steps.items():
         dct = step.get_param_dist(X)
@@ -100,12 +101,10 @@ def foo(clf, X, y, trn_n, tst_n, periods, tests, perf_fn, folds=3, verbose=0):
             new_key = '%s__%s' % (name, k)
             param_dist[new_key] = v
 
-    from cross_validate import cross_validate as CV
-    cv = CV(clf, X, y,
-            param_dist=param_dist,
-            verbose=verbose,
-            scorer=scorer,
-            n_iter=tests, results_file=perf_fn, folds=folds)
+    from cross_validate import cross_validate
+    cv = cross_validate(clf, X, y, groups=periods, cvs=nop_cv,
+                        param_dist=param_dist, verbose=verbose, scorer=scorer,
+                        n_iter=tests, results_file=perf_fn, folds=folds)
 
 '''
 raw columns:

@@ -29,7 +29,7 @@ def scorer_default(estimator, X, y):
     return estimator.score(X, y) # higher is better
 
 
-def cross_validate(clf, X, y=None, param_dist=None, n_iter=10,
+def cross_validate(clf, X, y=None, groups=None, param_dist=None, n_iter=10,
                    folds=3, fit_params=None,
                    scorer=scorer_default, verbose=3, cvs=None, error_score=0,
                    refit=True, results_file='crossval.txt'):
@@ -72,7 +72,7 @@ def cross_validate(clf, X, y=None, param_dist=None, n_iter=10,
     '''
 
     start = time()
-    random_search.fit(X, y)
+    random_search.fit(X, y, groups)
     print("RandomizedSearchCV took %.2f seconds for %d candidates"
           " parameter settings." % ((time() - start), n_iter))
     best = report(random_search)
