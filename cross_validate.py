@@ -43,11 +43,11 @@ def cross_validate(clf, X, y=None, groups=None, param_dist=None, n_iter=10,
     def report(random_search, n_top=N_TOP):
         df = pd.DataFrame(random_search.cv_results_)
         # use worst case 1/3 of distribution to judge cross validation results 
-        df['dist'] = df.mean_test_score - df.std_test_score
-        df.sort_values('mean_test_score', ascending=True, inplace=True)
-        print(df[['rank_test_score', 'mean_test_score',
+        df['dist'] = df.sum_test_score - df.std_test_score
+        df.sort_values('sum_test_score', ascending=True, inplace=True)
+        print(df[['rank_test_score', 'sum_test_score',
                   'std_test_score', 'dist', 'params']])
-        #df[['rank_test_score', 'mean_test_score', 'std_test_score', 'dist', 'params']].to_csv(results_file)
+        #df[['rank_test_score', 'sum_test_score', 'std_test_score', 'dist', 'params']].to_csv(results_file)
         df.to_csv(results_file)
         return df.iloc[0]
 

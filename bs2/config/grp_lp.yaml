@@ -12,21 +12,18 @@ data_setup:
     use_extra: true
 
 cv:
-    perf_fn: /home/jprior/Scratch/qta_perf/perf_grp_rf.csv
+    perf_fn: /home/jprior/Scratch/qta_perf/grp_lp.csv
 
 model_pipeline:
     -
         name: grp_fit
         output_col: target
-        klass_class: RF
-        klass_module: algs.rf
+        klass_class: LP
+        klass_module: algs.lp
         params:
             inputs: [p00,p01,p02,p03,p04,p05,p06,p07,p08,p09,p10,p11,p12,p13,p14,p15,p16,p17,p18,x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,time,bs_spcfc,bs]
-            n_estimators: 64
             cv_params:
-                min_samples_leaf:
-                    min: 1
-                    max: 1000
-                    type: int
-        dump_preds: grp_preds.txt
+                fit_intercept: [True, False]
+                normalize: [True, False]
+        # dump_preds: grp_lp.txt
         

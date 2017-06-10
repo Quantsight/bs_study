@@ -1,0 +1,29 @@
+rem_ftp:
+    host: ftp.texasvanbavel.com
+    user: johnp
+    pw: dataminer123!
+    path_root: farsight/
+
+data_setup:
+    no_time_series_fit: false
+    trn_n: 3
+    tst_n: 1
+    addtnl_inputs: [sym,time]
+    use_extra: true
+
+cv:
+    perf_fn: /home/jprior/Scratch/qta_perf/perf_grp_rf_2.csv
+
+model_pipeline:
+    -
+        name: grp_fit
+        output_col: target
+        klass_class: RF
+        klass_module: algs.rf
+        params:
+            inputs: [p00,p01,p02,p03,p04,p05,p06,p07,p08,p09,p10,p11,p12,p13,p14,p15,p16,p17,p18,x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,time,bs_spcfc,bs]
+            n_estimators: 64
+            cv_params:
+                min_samples_leaf: [1, 200]
+        # dump_preds: grp_preds.txt
+        

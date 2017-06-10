@@ -23,19 +23,38 @@ pd.set_option('display.max_columns', 28)
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
 
-def thres_cum(y_true, y_pred, verbose=1, asc=False):
-    data = pd.DataFrame({'y_true': y_true,
-                         'y_pred': y_pred})
+
+class Perfer:
+    def __init__(self, df):
+        ''' df stores extra information related to each trade (
+        buy/sell/nickpred etc) '''
+        self.df = df
+
+    def __call__(self, y_true, y_pred):
+        ''' y_pred is straight numpy array; y_true is Series from df '''
+        data = pd.DataFrame({'y_true': y_true,
+                             'y_pred': y_pred})
+        foo = pd.merge(data, self.df[['time', 'bs']], left_index=True,
+                       right_index=True)
+        foo.y_true *= foo.bs
+        foo.y_pred *= foo.bs
+        return thres_cum(foo)
+
+
+def thres_cum(data, verbose=1, asc=False):
     data.sort_values('y_pred', ascending=asc, inplace=True)
     data['cumraw'] = data.y_true.cumsum()
     lbl_max = data.cumraw.idxmax()
     i_max = data.index.get_loc(lbl_max)
     pct_taken = 100*float(i_max)/len(data)
     cumraw = data.iloc[i_max].cumraw
+    rmse = np.sqrt(((data.y_true - data.y_pred) ** 2).mean())
     if verbose > 0:
-        print('%8d  %8d (%3.0f%%) t:%6.2f  $%8.0f  $%2.2f/trade' % (
-            len(y_true), i_max, pct_taken, 
-            data.iloc[i_max].y_pred, cumraw, cumraw/i_max))
+        avg_opp = data.y_true.sum() / len(data)
+        avg_trade = cumraw/i_max
+        print('%8d %8d %3.0f%% %5.2f  $%8.0f  $%2.2f  $%2.2f  %5.2f %5.2f' % (
+            len(data.y_true), i_max, pct_taken,  data.iloc[i_max].y_pred,
+            cumraw, avg_opp, avg_trade, rmse, rmse/avg_opp))
     return cumraw
 
 
@@ -44,7 +63,7 @@ def report_perf(df_ts, preds, bs, verbose=1):
     profit = np.array(df_ts.raw)
     preds = np.array(preds)
     if bs:
-        ix =  np.where(df_ts.bs == bs)[0]
+        ix = np.where(df_ts.bs == bs)[0]
         profit = bs * profit[ix]
         asc = bs < 0
     else:
@@ -63,7 +82,9 @@ def report_perf(df_ts, preds, bs, verbose=1):
     # pass by .values to strip index
     if verbose > 0:
         print('%+d ' % (bs,), end='')
-    return thres_cum(profit, preds[ix], verbose, asc)
+    data = pd.DataFrame({'y_true': profit,
+                         'y_pred': preds[ix]})
+    return thres_cum(data, verbose, asc)
 
 
 from scipy.stats import spearmanr
@@ -88,7 +109,7 @@ def report_all_perf(df, ys, verbose=1):
 
 def foo(clf, X, y, trn_n, tst_n, periods, tests, perf_fn, folds=3, verbose=0):
     from sklearn.metrics import make_scorer
-    scorer = make_scorer(thres_cum, greater_is_better=True)
+    scorer = make_scorer(Perfer(X), greater_is_better=True)
 
     from time_series_loo import NearestOrPreviousLeaveOneOut
     nop_cv = NearestOrPreviousLeaveOneOut(trn_n, tst_n, periods)

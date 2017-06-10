@@ -27,18 +27,18 @@ class ModelBase(BaseEstimator):
 
     def get_param_dist(self, xs):
         param_dist = {}
-        for k,v in self._cv_params.items():
-            if isinstance(v, (list, tuple)) and not isinstance(v, basestring):
-                vtype = list
-            else:
-                vtype = eval(v['type'])
-            assert vtype in [int, float, list]
-            if vtype == int:
-                param_dist[k] = sp_randint(v['min'], v['max'])
-            elif vtype == float:
-                param_dist[k] = sp_uniform(v['min'], v['max'])
-            elif vtype == list:
+        for k, v in self._cv_params.items():
+            assert isinstance(v, (list, tuple))
+            assert not isinstance(v, basestring)
+            vmin = v[0]
+            if isinstance(vmin, basestring) or isinstance(vmin, bool):
                 param_dist[k] = v
+            else:
+                vmax = v[1]
+                if int(vmin) == vmin and int(vmax) == vmax:
+                    param_dist[k] = sp_randint(vmin, vmax)
+                else:
+                    param_dist[k] = sp_uniform(vmin, vmax)
         assert param_dist, 'No cv_params passed by cv attempted.'
         return param_dist
 
