@@ -18,7 +18,7 @@ from algs.model import pipeline_from_dicts
 np.set_printoptions(linewidth = 250, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
 import pandas as pd
-pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
+#pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
 pd.set_option('display.max_columns', 28)
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
