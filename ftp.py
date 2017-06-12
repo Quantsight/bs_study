@@ -1,5 +1,4 @@
 import ftplib
-import yaml
 
 def put(in_fn, out_path, out_fn, config):
     ftp = ftplib.FTP(config['host'])
