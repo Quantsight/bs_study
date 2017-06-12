@@ -6,6 +6,23 @@ from joblib import load, dump
 
 import util
 
+'''
+raw columns:
+    year, month, day, time, sym,
+    0...20 Predictor Inputs,
+    0...n extra inputs
+    target: used for training predictor; clamped value of raw_target
+    raw_target: estimated gain/loss per trade, assuming a buy.
+      For buys +raw_target is good, - is bad.
+      For sells, -raw_target is good.
+
+Of the "Predictor Inputs":
+columns 0-18 are common inputs to buy and sell predictors
+column 19 is input for either the buy or the sell predictor
+column 20 (last column) is +/-1 indicating buy or sell
+'''
+
+
 def main(args):
     n_predictors = 19
     n_xtra = 10

@@ -18,7 +18,7 @@ from algs.model import pipeline_from_dicts
 np.set_printoptions(linewidth = 250, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
 import pandas as pd
-#pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
+pd.set_option('display.width', None)
 pd.set_option('display.max_columns', 28)
 pd.set_option('display.max_rows', 70)
 pd.set_option('display.precision', 4)
@@ -127,21 +127,7 @@ def foo(clf, X, y, trn_n, tst_n, periods, tests, perf_fn, folds=3, verbose=0):
                         param_dist=param_dist, verbose=verbose, scorer=scorer,
                         n_iter=tests, results_file=perf_fn, folds=folds)
 
-'''
-raw columns:
-    year, month, day, time, sym,
-    0...20 Predictor Inputs,
-    0...n extra inputs
-    target: used for training predictor; clamped value of raw_target
-    raw_target: estimated gain/loss per trade, assuming a buy.
-      For buys +raw_target is good, - is bad.
-      For sells, -raw_target is good.
 
-Of the "Predictor Inputs":
-columns 0-18 are common inputs to buy and sell predictors
-column 19 is input for either the buy or the sell predictor
-column 20 (last column) is +/-1 indicating buy or sell
-'''
 def main(args):
     np.random.seed(0)
 
@@ -161,7 +147,7 @@ def main(args):
     pi_names = [_ for _ in df.columns if re.match(r'p\d{2}', _)]
     xtra_names = [_ for _ in df.columns if re.match(r'x\d{2}', _)] if \
         use_extra else []
-    inputs = pi_names + xtra_names + addtnl_inputs +'bs_spcfc bs'.split()
+    inputs = pi_names + xtra_names + addtnl_inputs + 'bs_spcfc bs'.split()
 
     # ALL models will be pipelines (even if pipeline holds a single model)
     model_dcts = config['model_pipeline']
@@ -177,10 +163,8 @@ def main(args):
 
     if args.tests > 0:
         foo(model_pipeline, df[inputs], df[output_col], trn_n, tst_n, df.period,
-            tests   = args.tests,
-            perf_fn = config['cv']['perf_fn'],
-            folds   = args.folds,
-            verbose = args.verbose)
+            tests=args.tests, perf_fn=config['cv']['perf_fn'],
+            folds=args.folds, verbose=args.verbose)
     else:
         from time_series_loo import TimeSeriesLOO
         with util.timed_execution('Constructing LOO'):

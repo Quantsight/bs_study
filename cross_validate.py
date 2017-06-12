@@ -10,7 +10,7 @@ np.set_printoptions(linewidth = 190, threshold = 100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.5f' % (float(x),)})
 
 import pandas as pd
-pd.set_option('display.width', pd.util.terminal.get_terminal_size()[0])
+pd.set_option('display.width', None)
 pd.set_option('display.max_rows', 500)
 pd.set_option('precision', 2)
 
