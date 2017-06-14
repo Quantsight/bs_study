@@ -15,7 +15,7 @@ from algs.lp import LP
 from tree_tools import dump_tree
 from algs.model import pipeline_from_dicts
 
-np.set_printoptions(linewidth = 250, threshold = 100000,
+np.set_printoptions(linewidth=250, threshold=100000,
     formatter={'float':lambda x:'%6s' % (x,) if x!=float(x) else '%8.2f' % (float(x),)})
 import pandas as pd
 pd.set_option('display.width', None)
@@ -28,13 +28,13 @@ class Perfer:
     def __init__(self, df):
         ''' df stores extra information related to each trade (
         buy/sell/nickpred etc) '''
-        self.df = df
+        self.df=df
 
     def __call__(self, y_true, y_pred):
         ''' y_pred is straight numpy array; y_true is Series from df '''
-        data = pd.DataFrame({'y_true': y_true,
+        data=pd.DataFrame({'y_true': y_true,
                              'y_pred': y_pred})
-        foo = pd.merge(data, self.df[['time', 'bs']], left_index=True,
+        foo=pd.merge(data, self.df[['time', 'bs']], left_index=True,
                        right_index=True)
         foo.y_true *= foo.bs
         foo.y_pred *= foo.bs
@@ -58,10 +58,10 @@ def thres_cum(data, verbose=1, asc=False):
     return cumraw
 
 
-def report_perf(df_ts, preds, bs, verbose=1):
+def report_perf(df_ts, in_pred, bs, verbose=1):
     # passed preds could be a Series or np.array; we will destructively sort.
     profit = np.array(df_ts.raw)
-    preds = np.array(preds)
+    preds = np.array(in_pred)
     if bs:
         ix = np.where(df_ts.bs == bs)[0]
         profit = bs * profit[ix]
@@ -70,16 +70,10 @@ def report_perf(df_ts, preds, bs, verbose=1):
         bs = 0
         ix = range(len(df_ts))
         asc = False
-    
-        '''
-        # invert sell polarities (both prediction and raw target)
-        sell_ix =  np.where(df_ts.bs == -1)[0]
-        preds[sell_ix] *= -1
-        profit[sell_ix] *= -1
-        '''
-        preds *= df_ts.bs
-        profit *= df_ts.bs
-    # pass by .values to strip index
+        # strip index, since:  np.array * Series -> Series
+        bs_vals = np.array(df_ts.bs)
+        preds *= bs_vals
+        profit *= bs_vals
     if verbose > 0:
         print('%+d ' % (bs,), end='')
     data = pd.DataFrame({'y_true': profit,
@@ -152,7 +146,7 @@ def main(args):
     # ALL models will be pipelines (even if pipeline holds a single model)
     model_dcts = config['model_pipeline']
     output_col = model_dcts[0]['output_col']
-    model_pipeline = pipeline_from_dicts(model_dcts)
+    model_pipeline = pipeline_from_dicts(model_dcts, default_inputs=inputs)
     print(model_pipeline)
 
     if args.test_csv:

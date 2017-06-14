@@ -107,7 +107,7 @@ class ModelBase(BaseEstimator):
         print(self._clf)
 
 
-def from_dict(model_params_dct):
+def from_dict(model_params_dct, default_inputs):
     ''' there are 3 top-level attributes required:
         [klass_module, klass_class, params]
     '''
@@ -121,15 +121,24 @@ def from_dict(model_params_dct):
     # klass = globals()[model_params_dct['klass']]
     klass = getattr(sys.modules[model_params_dct['klass_module']],
         model_params_dct['klass_class'])
-    return klass(name, **(model_params_dct.get('params',{})))
+    return klass(name, inputs=default_inputs, **(model_params_dct.get(
+        'params', {})))
 
 
-def pipeline_from_dicts(model_params_dcts):
+def pipeline_from_dicts(model_params_dcts, default_inputs=None):
     # kinda weird, both the pipeline and Model itself store model names.
-    models = [(m['name'], from_dict(m)) for m in model_params_dcts]
+    models = [(m['name'], from_dict(m, default_inputs)) for m in model_params_dcts]
     from sklearn.pipeline import Pipeline
     pipe = Pipeline(models)
     return pipe
+
+
+def set_default_inputs(pipeline, inputs):
+    for (name, transform) in pipeline.steps:
+        m_inputs = getattr(transform, 'inputs')
+        if m_inputs is None:
+            m_inputs = inputs
+        setattr(transform, 'inputs', m_inputs)
 
 
 if __name__ == '__main__':
