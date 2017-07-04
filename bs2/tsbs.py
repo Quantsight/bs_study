@@ -182,14 +182,16 @@ def main(args):
                     is_trn.sum(), is_tst.sum()))
                 model_pipeline.fit(df.loc[is_trn, inputs],
                          df.loc[is_trn, output_col])
-                # print(model_pipeline)
+                if args.verbose > 0:
+                    print(model_pipeline)
                 df.loc[is_trn, 'pred_trn'] = model_pipeline.predict(df.loc[is_trn, inputs])
                 df.loc[is_tst, 'pred_tst'] = model_pipeline.predict(df.loc[is_tst, inputs])
 
             if 'dump_details' in model_dcts[0]:
                 fn = 'grp_%s' % (tst_desc,)
-                dump_tree(model_pipeline.get_model(), inputs, fn=fn,
-                          dir=model_dcts[0]['dump_details'], max_depth=4)
+                for step in model_pipeline.steps:
+                    dump_tree(step[1]._clf, inputs, fn=fn,
+                        dir=model_dcts[0]['dump_details'], max_depth=4)
 
             if args.verbose > 0:
                 print('PERFORMANCE')
@@ -242,7 +244,7 @@ if __name__ == '__main__':
     parser.add_argument('--config_fn', default='config.yaml')
     parser.add_argument('--test_csv')
 
-    parser.add_argument('--limit', type=float)
+    parser.add_argument('--limit', type=int)
     parser.add_argument('--sym', type=int)
     parser.add_argument('--verbose', type=int, default=1)
     parser.add_argument('--no_time_series_fit', type=int, default=0)
